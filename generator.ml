@@ -153,4 +153,5 @@ let generate size ops =
 	      !acc)
 	  ops atoms
   in
-  generate size ops [C0;C1]
+  List.filter (fun t -> operators t = ops)
+    (generate size ops [C0;C1])
