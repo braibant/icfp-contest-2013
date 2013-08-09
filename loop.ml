@@ -128,9 +128,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     print_newline ();
     print_string "$ "
 
-  let rec iloop p (log: Log.log) =
+  let rec iloop p (log: Xlog.log) =
     Print.print (message
-      ["current state", Log.print_short log;
+      ["current state", Xlog.print_short log;
        "possible terms", print_short p]);
     invite ();
     match read_line () with
@@ -139,20 +139,20 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
-      iloop p (Log.logv log keys values)
+      iloop p (Xlog.logv log keys values)
     | "e" -> 				(* random *)
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
-      iloop p (Log.logv log keys values)
+      iloop p (Xlog.logv log keys values)
     | "g" -> 
       let candidate = choose p in 
       begin match O.guess candidate with 
       | Equiv -> candidate
       | Discr (key, value) -> 
-	let log = Log.guess log candidate in 
-	let log = Log.log log key value in 
+	let log = Xlog.guess log candidate in 
+	let log = Xlog.log log key value in 
 	let refined,p = refine1 p key value in 
 	Printf.printf "refined: %b\n" refined;	
 	iloop p log
@@ -160,10 +160,10 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     | "q" -> 
       exit 0
     | "s" -> 
-      Log.save !Config.logfile log;
+      Xlog.save !Config.logfile log;
       iloop p log 
     | "p" ->
-      Print.print (Log.print log);
+      Print.print (Xlog.print log);
       iloop p log 
     | "c" ->
       Printf.printf "all_equiv:%b\n" (all_equiv p);
@@ -174,7 +174,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 	
          
   let iloop () = 
-    let r = iloop init Log.empty in 
+    let r = iloop init Xlog.empty in 
     Printf.printf "result\n";
     Print.(print_exp_nl r);
     Printf.printf "secret\n";
