@@ -5,3 +5,6 @@ External dependencies:
 
 - yojson (ocamlfind package)
   opam install yojson
+
+- bitv (ocamlfind package)
+  opam install bitv
