@@ -2,8 +2,10 @@ open Protocol
 open Yojson.Basic.Util
 
 let json_of_int64 n =
-  assert false
-let int64_of_json _ = assert false
+  `String (Printf.sprintf "0x%Lx" n)
+let int64_of_json j =
+  try Scanf.sscanf (to_string j) "0x%Lx" (fun n -> n)
+  with _ -> failwith "int64_of_json"
 
 let json_of_int64_array arr =
   `List (List.map json_of_int64 (Array.to_list arr))
@@ -91,8 +93,6 @@ let json_of_training request =
       "operators", `List (List.map (fun o -> `String o) s))
   )
 
-
-
 let training_of_json json =
   let open Training.Response in
   let get f = member f json in
@@ -101,6 +101,9 @@ let training_of_json json =
   let size = to_int (get "size") in
   let operators = convert_each to_string (get "operators") in
   { challenge; id; size; operators }
+
+
+(** Status *)
 
 let status_of_json json =
   let open Status.Response in
