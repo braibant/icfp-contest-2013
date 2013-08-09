@@ -85,7 +85,7 @@ let send_training request =
       `Training_body response
     | n -> unknown_code name n
 
-let send_status request =
+let send_status () =
   let name = name `Status in
   let call = new post_raw (addr name) "" in
   match (response call) # response_status_code with
