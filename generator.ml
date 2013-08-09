@@ -38,7 +38,7 @@ type fold_state =
   | Forbidden
 
 let generate, generate_tfold, generate_novar =
-  let generate filter size ops atoms =
+  let generate filter size exact ops atoms =
     let has_fold = OSet.mem Foldo ops in
     let ops = OSet.remove Foldo ops in
     let memo = Array.make_matrix size 3 None in
@@ -183,25 +183,32 @@ let generate, generate_tfold, generate_novar =
       | Some x -> x
       | None -> assert false
     in
+    let rec aux2 size fold_state =
+      if exact then aux size fold_state
+      else
+	match size with
+	| 0 -> []
+	| _ -> List.rev_append (aux size fold_state) (aux2 (size-1) fold_state)
+    in
     if filter then
       let ops' = if has_fold then OSet.add Foldo ops else ops in
-      let lst = aux size (if has_fold then Required else Forbidden) in
+      let lst = aux2 size (if has_fold then Required else Forbidden) in
       List.filter (fun t -> OSet.equal (operators t) ops') lst
     else
-      let lst = aux size Forbidden in
+      let lst = aux2 size Forbidden in
       if has_fold then List.rev_append (aux size Required) lst else lst
   in
-  (fun ?(filter=true) size ops ->
-    (generate filter size ops [C0;C1;Var Constants.arg])),
-  (fun ?(filter=true) size ops ->
+  (fun ?(filter=true) size ?(exact=true) ops ->
+    (generate filter size exact ops [C0;C1;Var Constants.arg])),
+  (fun ?(filter=true) size ?(exact=true) ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-3 in
     let lst =
-      generate filter size ops
+      generate filter size exact ops
 	[Var Constants.fold_acc;Var Constants.fold_arg;C0;C1]
     in
     List.rev_map (fun t -> Fold (Var Constants.arg, C0, t)) lst),
-  (fun ?(filter=true) size ops -> generate filter size ops [C0;C1])
+  (fun ?(filter=true) size ?(exact=true) ops -> generate filter size exact ops [C0;C1])
 
-let generate_constants ?(filter=true) size ops =
-  List.rev_map (fun t -> eval t 0L) (generate_novar ~filter size ops)
+let generate_constants ?(filter=true) size ?(exact=true) ops =
+  List.rev_map (fun t -> eval t 0L) (generate_novar ~filter ~exact size ops)
