@@ -17,12 +17,18 @@ let refinement_measure (terms: exp array) (selected_terms: Bitv.t) (disc_value: 
       answers 0
   in
   Printf.printf "Max: %d\n" max_count;
-  Printf.printf "Nombre: %d\n" (Bitv.length selected_terms);
+  (* Printf.printf "Nombre: %d\n" (Bitv.length selected_terms); *)
   (float_of_int max_count) /. (float_of_int (Bitv.length selected_terms))
 
-    
-let terms = Array.of_list (Generator.generate 3 Generator.all_ops)
-let _ = Printf.printf "%d\n" (Array.length terms)
+let terms = Array.of_list (Generator.generate ~filter:false 7 Generator.all_ops)
+let _ = Printf.printf "Total number of terms: %d\n" (Array.length terms)
 let selected = Bitv.create (Array.length terms) true
-let disc_value = 0x0000000000000001L
-let _ = Printf.printf "%f\n" (refinement_measure terms selected disc_value)
+(* let disc_value = 0x0000000000000001L *)
+(* let _ = Printf.printf "%f\n" (refinement_measure terms selected disc_value) *)
+let _ =
+  let r = ref 1L in
+  for i = 1 to 64 do
+    Printf.printf "Discrimination with %s:\n" (Int64.to_string !r);
+    refinement_measure terms selected !r;
+    r := shift_left !r 1
+  done
