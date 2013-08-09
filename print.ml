@@ -52,3 +52,5 @@ let doc_exp exp = doc_sexp (sexp_exp exp)
 
 let print doc =
   ToChannel.pretty 1. 72 stdout doc
+
+include PPrint
