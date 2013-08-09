@@ -1,7 +1,17 @@
 External dependencies:
 
-- pprint (ocamlfind package)
-  http://gallium.inria.fr/~fpottier/pprint/pprint-20130324.tar.gz
+- Pretty printer: pprint
+    http://gallium.inria.fr/~fpottier/pprint/pprint-20130324.tar.gz
 
-- yojson (ocamlfind package)
-  opam install yojson
+- JSON serialization: yojson
+    opam install yojson
+
+- Network communication: ocurl
+    opam install ocurl
+
+  You need to have "libcurl" installed on your system. On Debian I had
+  to do (the "libcurl-dev" package was ambiguous):
+    sudo aptitude install libcurl4-openssl-dev
+
+- Bit vectors implementation: bitv
+    opam install bitv

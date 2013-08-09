@@ -1,1 +1,1 @@
-true: package(pprint)
+true: package(pprint), package(bitv)
