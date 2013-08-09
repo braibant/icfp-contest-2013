@@ -33,6 +33,7 @@ let rec sexp_exp = function
     List [Word "fold"; sexp_exp bytes; sexp_exp init; sexp_lam2 lam]
   | Op1 (op, e, _) -> List [Word (string_of_op1 op); sexp_exp e]
   | Op2 (op, e1, e2, _) -> List [Word (string_of_op2 op); sexp_exp e1; sexp_exp e2]
+  | Cst (_, _, e, _) -> sexp_exp e
 and sexp_lam_generic args e =
   List [Word "lambda"; List args; sexp_exp e]
 and sexp_lam1 ((* x, *) e) =

@@ -19,7 +19,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   (* a bitvector representation of a set of the possible programs *)
   type t = Bitv.t 
 
-  let terms = Array.of_list (Generator.generate ~filter:false n ops)
+  let terms = Array.of_list (Generator.generate ~force_fold:false n ops)
   let init = Bitv.create (Array.length terms) true
 
   let print (p:t)=

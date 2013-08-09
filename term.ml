@@ -6,6 +6,8 @@ type exp =
 | Fold of exp * exp * exp * tag
 | Op1 of op1 * exp * tag
 | Op2 of op2 * exp * exp * tag
+| Cst of int64 (* Value *) * int (* size of replaced term *) *
+      exp (* example of realisation *) * tag
 and tag = int
 and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
 and op2 = | And | Or | Xor | Plus
@@ -19,6 +21,7 @@ let get_exp_id = function
   | Fold (_, _, _, x) -> x
   | Op1 (_, _, x) -> x
   | Op2 (_, _, _, x) -> x
+  | Cst (_, _, _, x) -> x
 
 module HC = Hashcons.Make(struct
   type t = exp
@@ -36,6 +39,8 @@ module HC = Hashcons.Make(struct
 	a1 = a2 && b1 == b2
     | Op2 (a1, b1, c1, _), Op2 (a2, b2, c2, _) ->
 	a1 = a2 && b1 == b2 && c1 == c2
+    | Cst (a1, b1, _, _), Cst (a2, b2, _, _) ->
+	a1 = a2 && b1 = b2
     | _ -> false
 
   let hash x =
@@ -55,6 +60,9 @@ module HC = Hashcons.Make(struct
 	Hashcons.combine2
 	  (match op with And -> 71 | Or -> 73 | Xor -> 79 | Plus -> 83)
 	  (get_exp_id a) (get_exp_id b)
+    | Cst (a, b, _, _) ->
+	Hashcons.combine2 91
+	  (Int64.to_int (Int64.mul a 103L)) b
 
   let tag n = function
     | C0 -> C0
@@ -64,9 +72,15 @@ module HC = Hashcons.Make(struct
     | Fold (a, b, c, _) -> Fold (a, b, c, n)
     | Op1 (a, b, _) -> Op1 (a, b, n)
     | Op2 (a, b, c, _) -> Op2 (a, b, c, n)
+    | Cst (a, b, c, _) -> Cst (a, b, c, n)
 
 end)
 
+module H = Hashtbl.Make(struct
+  type t = exp
+  let equal = (==)
+  let hash = get_exp_id
+end)
 
 let size x =
   let rec aux = function
@@ -75,6 +89,7 @@ let size x =
     | Fold (e,f,g, _) -> 2 + aux e + aux f + aux g
     | Op1 (_, e, _) -> 1 + aux e
     | Op2 (_, e, f, _) -> 1 + aux e + aux f
+    | Cst (_, x, _, _) -> x
   in aux x + 1
 
 (* There is at most three variables in the terms, hence, we can define them statically *)
@@ -123,6 +138,7 @@ let eval =
 	e0 := shift_right_logical !e0 2;
       done;
       !acc
+    | Cst (a, _, _, _) -> a
   in
   fun p x -> env.(Constants.arg) <- x; eval p
 ;;
@@ -134,6 +150,7 @@ module Notations = struct
   let mk_farg = HC.hashcons (Var (Constants.fold_arg))
   let c0 = HC.hashcons C0
   let c1 = HC.hashcons C0
+  let cst v e = HC.hashcons (Cst (v, size e-1, e, -1))
 
   (* binop *)
   let (&&) x y = HC.hashcons (Op2 (And, x, y, -1))

@@ -6,6 +6,8 @@ type exp = private
 | Fold of exp * exp * exp * tag
 | Op1 of op1 * exp * tag
 | Op2 of op2 * exp * exp * tag
+| Cst of int64 (* Value *) * int (* size of replaced term *) *
+      exp (* example of realisation *) * tag
 and tag
 and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
 and op2 = | And | Or | Xor | Plus
@@ -14,6 +16,8 @@ and ident = int
 val get_exp_id : exp -> int
 
 module HC : Hashcons.S with type t = exp
+
+module H : Hashtbl.S with type key = exp
 
 val size : exp -> int
 
@@ -33,6 +37,7 @@ module Notations :
       val mk_farg : exp
       val c0 : exp
       val c1 : exp
+      val cst : int64 -> exp -> exp
       val (&&) : exp -> exp -> exp
       val (||) : exp -> exp -> exp
       val ( ** ) : exp -> exp -> exp (*Xor*)

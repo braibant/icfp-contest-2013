@@ -31,7 +31,7 @@ let not_so_random_bits p pmax =
   done;
   !s
 
-let terms = Array.of_list (Generator.generate ~filter:false 7 Generator.all_ops)
+let terms = Array.of_list (Generator.generate ~force_fold:false 7 Generator.all_ops)
 let _ = Printf.printf "Total number of terms: %d\n" (Array.length terms)
 let selected = Bitv.create (Array.length terms) true
 (* let disc_value = 0x0000000000000001L *)
