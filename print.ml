@@ -5,6 +5,7 @@ let string_of_id s =
   | 0 -> "x"
   | 1 -> "acc"
   | 2 -> "y"
+  | _ -> assert false
 
 let string_of_op1 = function
   | Not -> "not"

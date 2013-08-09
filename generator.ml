@@ -39,7 +39,7 @@ let generate, generate_tfold =
 	  | Op2o op ->
 	      if OSet.mem Foldo ops then
 		begin
-		  let acc = ref [] in
+		  let acc = ref acc in
 		  for i = 1 to size-5 do
 		    let genl = generate i ops atoms in
 		    let genr = generate (size-1-i) (OSet.remove Foldo ops) atoms in
@@ -61,7 +61,7 @@ let generate, generate_tfold =
 		  !acc
 		end
 	      else
-		let acc = ref [] in
+		let acc = ref acc in
 		for i = 1 to size-2 do
 		  let genl = generate i ops atoms in
 		  let genr = generate (size-1-i) ops atoms in
