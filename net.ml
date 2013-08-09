@@ -73,7 +73,7 @@ let send_guess request =
 
 let send_training request =
   let name = name `Training in
-  let body = Yojson.Basic.to_string (Protocol_json.json_of_eval request) in
+  let body = Yojson.Basic.to_string (Protocol_json.json_of_training request) in
   let call = new post_raw (addr name) body in
   match (response call) # response_status_code with
     | 400 -> `Bad_request
