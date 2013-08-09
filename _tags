@@ -1,1 +1,1 @@
-true: package(pprint), package(bitv)
+true: package(pprint), package(bitv), package(yojson)
