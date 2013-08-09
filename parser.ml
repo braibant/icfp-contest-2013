@@ -11,8 +11,8 @@ let () = EXTEND LambdaGram
   prog: [[ "("; "lambda"; "("; x = id; ")"; e = term; ")"; `EOI -> `Lam (x, e) ]];
   term_eoi: [[ t = term; `EOI -> t ]];
   term: [[
-       "0" -> `C0
-     | "1" -> `C1
+       `INT(0, _) -> `C0
+     | `INT(1, _) -> `C1
      | x = id -> `Var x
      | "("; op = op1; e = term; ")" -> `Op1 (op, e)
      | "("; op = op2; e1 = term; e2 = term; ")" -> `Op2 (op, e1, e2)
@@ -97,6 +97,11 @@ let bind v t =
 let bind_prog v (`Lam (_x, e)) = bind v e
 
 let prog_of_string str =
-  let term_with_vars = LambdaGram.parse_string prog (Loc.mk "lalala") str in
-  let vars = collect_prog term_with_vars in
-  bind_prog vars term_with_vars
+  try
+    let term_with_vars = LambdaGram.parse_string prog (Loc.mk "lalala") str in
+    let vars = collect_prog term_with_vars in
+    bind_prog vars term_with_vars
+  with Loc.Exc_located (loc, exn) ->
+    Loc.print Format.err_formatter loc;
+    Format.eprintf "\nError %S in the parser\n%s%!" (Printexc.to_string exn) str;
+    raise exn

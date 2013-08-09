@@ -54,17 +54,24 @@ let send_eval request =
       `Eval_body response
     | n -> unknown_code name n
 
+exception Bad_request
+exception Unauthorized
+exception Not_found
+exception Gone
+exception Already_solved
+exception Request_too_big
+
 let send_guess request =
   let name = name `Guess in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_guess request) in
   let call = new post_raw (addr name) body in
   match (response call) # response_status_code with
-    | 400 -> `Bad_request
-    | 401 -> `Unauthorized
-    | 404 -> `Not_found
-    | 410 -> `Gone
-    | 412 -> `Already_solved
-    | 413 -> `Request_too_big
+    | 400 -> raise Bad_request
+    | 401 -> raise Unauthorized
+    | 404 -> raise Not_found
+    | 410 -> raise Gone
+    | 412 -> raise Already_solved
+    | 413 -> raise Request_too_big
     | 200 ->
       let json = json_body name call in
       let response = Protocol_json.guess_of_json json in

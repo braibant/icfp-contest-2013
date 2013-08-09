@@ -126,11 +126,13 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 
   let invite () =
     print_newline ();
+    print_string "(b)est r(e)ndom (g)uess (c)heck_all_equiv";
+    print_newline ();
     print_string "$ "
 
-  let rec iloop p (log: Log.log) =
+  let rec iloop p (log: Xlog.log) =
     Print.print (message
-      ["current state", Log.print_short log;
+      ["current state", Xlog.print_short log;
        "possible terms", print_short p]);
     invite ();
     match read_line () with
@@ -139,20 +141,21 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
-      iloop p (Log.logv log keys values)
+      iloop p (Xlog.logv log keys values)
     | "e" -> 				(* random *)
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
-      iloop p (Log.logv log keys values)
+      iloop p (Xlog.logv log keys values)
     | "g" -> 
       let candidate = choose p in 
       begin match O.guess candidate with 
-      | Equiv -> candidate
+      | Equiv -> 
+	candidate
       | Discr (key, value) -> 
-	let log = Log.guess log candidate in 
-	let log = Log.log log key value in 
+	let log = Xlog.guess log candidate in 
+	let log = Xlog.log log key value in 
 	let refined,p = refine1 p key value in 
 	Printf.printf "refined: %b\n" refined;	
 	iloop p log
@@ -160,10 +163,10 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     | "q" -> 
       exit 0
     | "s" -> 
-      Log.save !Config.logfile log;
+      Xlog.save !Config.logfile log;
       iloop p log 
     | "p" ->
-      Print.print (Log.print log);
+      Print.print (Xlog.print log);
       iloop p log 
     | "c" ->
       Printf.printf "all_equiv:%b\n" (all_equiv p);
@@ -174,18 +177,17 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 	
          
   let iloop () = 
-    let r = iloop init Log.empty in 
+    let r = iloop init Xlog.empty in 
     Printf.printf "result\n";
     Print.(print_exp_nl r);
     Printf.printf "secret\n";
     Print.(print_exp_nl (O.reveal ()))
 
 
-  let rec loop p = 
-    (* Printf.eprintf "size:%i\n" (State.size p); *)
-    let values = best p in 
-    let answers = O.eval values in 
-    let refined,p = refine p values answers in 
+  let rec loop round p = 
+    let keys = if round < 5 then  Array.init 256 (fun _ -> rnd64 ()) else best p in 
+    let values = O.eval keys in 
+    let refined,p = refine p keys values in 
     if size p = 1 || not refined
     then 
       begin 
@@ -197,58 +199,51 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 	  if not refined 
 	  then (Printf.eprintf "guess was not refining, size:%i\n" (size p); 
 		Print.print (print p); assert false);
-	  loop p
+	  loop (succ round) p
       end
-    else loop p
+    else loop (succ round) p
       
   let loop () = 
-    let r =  (loop init) in 
+    let r =  (loop 0 init) in 
     Printf.printf "result\n";
     Print.(print_exp r)
 
 end
 
-let args = 
-  let open Arg in 
-  ["-o", Set_string Config.logfile, " set log file";
-   "-i", Set Config.interactive_mode, " interactive mode" ;
-   "-n", Set_int Config.problem_size, " set problem size";
-   "-s", Set_string Config.secret, " set the secret (debug)"]
+
+(* (\* Oracle *\) *)
+(* module Oracle(S: sig val secret : Term.exp end)  = struct *)
+(*   include S *)
+(*   let eval v = evalv v secret *)
+
+(*   let discriminating n = Array.init n (fun x -> Random.int64 Int64.max_int) *)
+
+(*   let guess p' = *)
+(*     let confidence = 10000 in  *)
+(*     let tests = discriminating confidence in  *)
+(*     let rec aux i =  *)
+(*       if i = confidence - 1 then Equiv  *)
+(*       else *)
+(* 	let x = tests.(i) in *)
+(* 	if Term.eval p' x = Term.eval secret x  *)
+(* 	then aux (succ i) *)
+(* 	else Discr (x,Term.eval secret x) *)
+(*     in aux 0 *)
+
+(*   let reveal () = secret        *)
+(* end *)
 
 
-(* Oracle *)
-module Oracle(S: sig val secret : Term.exp end)  = struct
-  include S
-  let eval v = evalv v secret
-
-  let discriminating n = Array.init n (fun x -> Random.int64 Int64.max_int)
-
-  let guess p' =
-    let confidence = 10000 in 
-    let tests = discriminating confidence in 
-    let rec aux i = 
-      if i = confidence - 1 then Equiv 
-      else
-	let x = tests.(i) in
-	if Term.eval p' x = Term.eval secret x 
-	then aux (succ i)
-	else Discr (x,Term.eval secret x)
-    in aux 0
-
-  let reveal () = secret       
-end
-
-
-let _ =
-  Arg.parse args (fun rest -> ()) "usage";
-  let secret = Example.gen !Config.problem_size in 
-  Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
-  let module Oracle = Oracle(struct let secret = secret end) in
-  let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in 
-  let module Loop = FState(Params)(Oracle) in 
-  if !Config.interactive_mode 
-  then Loop.iloop ()
-  else Loop.loop ()
+(* let _ = *)
+(*   Arg.parse Config.args (fun rest -> ()) "usage"; *)
+(*   let secret = Example.gen !Config.problem_size in  *)
+(*   Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret); *)
+(*   let module Oracle = Oracle(struct let secret = secret end) in *)
+(*   let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in  *)
+(*   let module Loop = FState(Params)(Oracle) in  *)
+(*   if !Config.interactive_mode  *)
+(*   then Loop.iloop () *)
+(*   else Loop.loop () *)
 
   
 
