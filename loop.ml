@@ -210,10 +210,10 @@ end
 
 let args = 
   let open Arg in 
-  ["-o", Set_string Options.logfile, " set log file";
-   "-i", Set Options.interactive_mode, " interactive mode" ;
-   "-n", Set_int Options.problem_size, " set problem size";
-   "-s", Set_string Options.secret, " set the secret (debug)"]
+  ["-o", Set_string Config.logfile, " set log file";
+   "-i", Set Config.interactive_mode, " interactive mode" ;
+   "-n", Set_int Config.problem_size, " set problem size";
+   "-s", Set_string Config.secret, " set the secret (debug)"]
 
 
 (* Oracle *)
@@ -241,12 +241,12 @@ end
 
 let _ =
   Arg.parse args (fun rest -> ()) "usage";
-  let secret = Example.gen !Options.problem_size in 
+  let secret = Example.gen !Config.problem_size in 
   Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
   let module Oracle = Oracle(struct let secret = secret end) in
   let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in 
   let module Loop = FState(Params)(Oracle) in 
-  if !Options.interactive_mode 
+  if !Config.interactive_mode 
   then Loop.iloop ()
   else Loop.loop ()
 
