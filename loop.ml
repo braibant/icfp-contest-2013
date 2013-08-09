@@ -184,11 +184,10 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     Print.(print_exp_nl (O.reveal ()))
 
 
-  let rec loop p = 
-    (* Printf.eprintf "size:%i\n" (State.size p); *)
-    let values = best p in 
-    let answers = O.eval values in 
-    let refined,p = refine p values answers in 
+  let rec loop round p = 
+    let keys = if round < 5 then  Array.init 256 (fun _ -> rnd64 ()) else best p in 
+    let values = O.eval keys in 
+    let refined,p = refine p keys values in 
     if size p = 1 || not refined
     then 
       begin 
@@ -200,12 +199,12 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 	  if not refined 
 	  then (Printf.eprintf "guess was not refining, size:%i\n" (size p); 
 		Print.print (print p); assert false);
-	  loop p
+	  loop (succ round) p
       end
-    else loop p
+    else loop (succ round) p
       
   let loop () = 
-    let r =  (loop init) in 
+    let r =  (loop 0 init) in 
     Printf.printf "result\n";
     Print.(print_exp r)
 
