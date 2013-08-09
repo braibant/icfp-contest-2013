@@ -22,6 +22,8 @@ module Oracle(X: sig val id : string val secret : Term.exp end) = struct
 end
       
 
+(* this is the main handler for training problems. I tested it in
+   interactive mode, but not yet in automated mode [loop] *)
 let train () =
   let open Training in 
   match send_training ({Protocol.Training.Request.size = Some !Config.problem_size; Protocol.Training.Request.operators = Some []}) with
