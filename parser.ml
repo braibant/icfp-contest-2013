@@ -3,12 +3,13 @@ open Term
 open Camlp4.PreCast
 module LambdaGram = MakeGram(Lexer)
  
-let term = LambdaGram.Entry.mk "term"
+let term_eoi = LambdaGram.Entry.mk "term"
 let prog = LambdaGram.Entry.mk "full_program"
 
 let () = EXTEND LambdaGram
-  GLOBAL: term prog;
+  GLOBAL: term_eoi prog;
   prog: [[ "("; "lambda"; "("; x = id; ")"; e = term; ")"; `EOI -> ((* x, *) e) ]];
+  term_eoi: [[ t = term; `EOI -> t ]];
   term: [[
        "0" -> C0
      | "1" -> C1
@@ -35,3 +36,6 @@ let () = EXTEND LambdaGram
   | "plus" -> Plus
   ]];
 END;;
+
+let prog_of_string str =
+  LambdaGram.parse_string prog (Loc.mk "lalala") str

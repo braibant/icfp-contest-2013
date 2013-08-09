@@ -2,6 +2,7 @@ Config
 Example
 Generator
 Net
+Parser
 Print
 Protocol
 Protocol_json
