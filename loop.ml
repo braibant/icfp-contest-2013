@@ -149,7 +149,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     | "g" -> 
       let candidate = choose p in 
       begin match O.guess candidate with 
-      | Equiv -> candidate
+      | Equiv -> 
+	Printf.printf "found a candidate\n%!";
+	candidate
       | Discr (key, value) -> 
 	let log = Xlog.guess log candidate in 
 	let log = Xlog.log log key value in 
