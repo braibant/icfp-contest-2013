@@ -16,9 +16,13 @@ let refinement_measure (terms: exp array) (selected_terms: Bitv.t) (disc_value: 
       (fun key count max_count -> max count max_count)
       answers 0
   in
+  let average_count = 
+    (Bitv.length selected_terms) / (Hashtbl.length answers)
+  in
   Printf.printf "Max: %d\n" max_count;
-  (* Printf.printf "Nombre: %d\n" (Bitv.length selected_terms); *)
-  (float_of_int max_count) /. (float_of_int (Bitv.length selected_terms))
+  Printf.printf "Average: %d\n" average_count;
+  (* (float_of_int max_count) /. (float_of_int (Bitv.length selected_terms)) *)
+  ()
 
 let terms = Array.of_list (Generator.generate ~filter:false 7 Generator.all_ops)
 let _ = Printf.printf "Total number of terms: %d\n" (Array.length terms)
