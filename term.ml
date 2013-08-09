@@ -60,10 +60,27 @@ let eval =
   fun p x -> env.(Constants.arg) <- x; eval p
 ;;
 
+module Notations = struct
+    
+  let mk_arg = Var (Constants.arg)
+  let mk_facc = Var (Constants.fold_acc)
+  let mk_farg = Var (Constants.fold_arg) 
 
-let mk_arg = Var (Constants.arg)
-let mk_facc = Var (Constants.fold_acc)
-let mk_farg = Var (Constants.fold_arg) 
-let p = Fold (mk_arg, C0, Op2(Or,mk_farg,mk_facc))
+  (* binop *)
+  let (&&) x y = Op2 (And, x, y)
+  let (||) x y = Op2 (Or, x, y)
+  let ( ** ) x y = Op2 (Xor, x, y)
+  let (++) x y = Op2 (Plus, x, y)
+    
+  (* unop *)
+  let (~~)  x = Op1 (Not, x)
+  let shl1 x = Op1 (Shl1, x)
+  let shr1 x = Op1 (Shr1, x)
+  let shr4 x = Op1 (Shr4, x)
+  let shr16 x = Op1 (Shr16, x)
+
+end 
+
+let p = let open Notations in Fold (mk_arg, C0, mk_farg || mk_facc)
 let _ = Printf.printf "%Ld\n" (eval p (0x1122334455667788L))
 	     
