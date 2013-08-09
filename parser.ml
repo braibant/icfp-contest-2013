@@ -78,14 +78,20 @@ let bind v t =
     else if eq v.fold_arg x then Constants.fold_arg
     else failwith "Parser.get_id" 
   in
-  let rec bind = function
-    | `C0 -> C0
-    | `C1 -> C1
-    | `Var x -> Var (get_id x)
-    | `If0 (e1, e2, e3) -> If0 (bind e1, bind e2, bind e3)
-    | `Fold (e0, e1, `Lam2 (_x, _y, e2)) -> Fold (bind e0, bind e2, bind e2)
-    | `Op1 (op, e) -> Op1 (op, bind e)
-    | `Op2 (op, e1, e2) -> Op2 (op, bind e1, bind e2)
+  let rec bind =
+    let open Notations in
+    function
+    | `C0 -> c0
+    | `C1 -> c1
+    | `Var x ->
+	if get_id x = Constants.arg then mk_arg
+	else if get_id x = Constants.fold_acc then mk_facc
+	else if get_id x = Constants.fold_arg then mk_farg
+	else assert false
+    | `If0 (e1, e2, e3) -> if0 (bind e1) (bind e2) (bind e3)
+    | `Fold (e0, e1, `Lam2 (_x, _y, e2)) -> fold (bind e0) (bind e2) (bind e2)
+    | `Op1 (op, e) -> op1 op (bind e)
+    | `Op2 (op, e1, e2) -> op2 op (bind e1) (bind e2)
   in bind t
 
 let bind_prog v (`Lam (_x, e)) = bind v e

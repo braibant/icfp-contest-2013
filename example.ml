@@ -1,25 +1,25 @@
 open Term
-open Notations 
- 
+open Notations
+
 let _ = Random.self_init ()
 
 let gen =
-  let x =  mk_arg in 
-  let y = mk_farg in 
-  let acc = mk_facc in 
+  let x =  mk_arg in
+  let y = mk_farg in
+  let acc = mk_facc in
 
-  let rec gen n = 
-    if n = 0 then  
+  let rec gen n =
+    if n = 0 then
       match Random.int 3 with
-      | 0 -> C0 
-      | 1 -> C1 
+      | 0 -> c0
+      | 1 -> c1
       | _ -> x
     else
       match Random.int 13 with
-      | 0 -> C0 
-      | 1 -> C1 
+      | 0 -> c0
+      | 1 -> c1
       | 2 -> x
-      | 3 -> If0 (gen (n - 1), gen (n-1), gen (n - 1))
+      | 3 -> if0 (gen (n - 1)) (gen (n-1)) (gen (n - 1))
       | 4 -> ~~ (gen (n-1))
       | 5 -> shl1 (gen (n - 1))
       | 6 -> shr1 (gen (n - 1))

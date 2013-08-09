@@ -21,13 +21,13 @@ let operators t =
   let rec operators t acc =
     match t with
     | C0 | C1 | Var _ -> acc
-    | If0(a,b,c) ->
+    | If0(a,b,c,_) ->
 	operators a (operators b (operators c (OSet.add If0o acc)))
-    | Fold(a,b,c) ->
+    | Fold(a,b,c,_) ->
 	operators a (operators b (operators c (OSet.add Foldo acc)))
-    | Op1(op,a) ->
+    | Op1(op,a,_) ->
 	operators a (OSet.add (Op1o op) acc)
-    | Op2(op,a,b) ->
+    | Op2(op,a,b,_) ->
 	operators a (operators b (OSet.add (Op2o op) acc))
   in
   operators t OSet.empty
@@ -44,7 +44,7 @@ let generate, generate_tfold, generate_novar =
     let memo = Array.make_matrix size 3 None in
     let () =
       memo.(0).(0) <- Some [];
-      memo.(0).(1) <- Some (Var Constants.fold_acc::Var Constants.fold_arg::atoms);
+      memo.(0).(1) <- Some (Notations.(mk_facc::mk_farg::atoms));
       memo.(0).(2) <- Some atoms
     in
     let rec aux size fold_state =
@@ -67,7 +67,7 @@ let generate, generate_tfold, generate_novar =
 		    acc:=
 		      List.fold_left (fun acc x ->
 			List.fold_left (fun acc y ->
-			  List.fold_left (fun acc z -> Fold (x,y,z)::acc) acc gen3)
+			  List.fold_left (fun acc z -> Notations.fold x y z::acc) acc gen3)
 			  acc gen2)
 			!acc gen1
 		  done;
@@ -81,7 +81,7 @@ let generate, generate_tfold, generate_novar =
 	    match op with
 	    | Op1o op ->
 		List.fold_left
-		  (fun acc x -> Op1 (op,x)::acc)
+		  (fun acc x -> Notations.op1 op x::acc)
 		  acc
 		  (aux (size-1) fold_state)
 	    | Op2o op ->
@@ -93,7 +93,7 @@ let generate, generate_tfold, generate_novar =
 		      let genr = aux (size-1-i) Forbidden in
 		      acc:=
 			List.fold_left (fun acc x ->
-			  List.fold_left (fun acc y -> Op2 (op,x,y)::acc)
+			  List.fold_left (fun acc y -> Notations.op2  op x y::acc)
 			    acc genr)
 			  !acc genl
 		    done;
@@ -109,7 +109,7 @@ let generate, generate_tfold, generate_novar =
 			List.fold_left (fun acc x ->
 			  List.fold_left (fun acc y ->
 			    if i = size-1-i && y < x then acc
-			    else Op2 (op,x,y)::acc)
+			    else Notations.op2 op x y::acc)
 			    acc genr)
 			  !acc genl
 		    done;
@@ -127,7 +127,7 @@ let generate, generate_tfold, generate_novar =
 			acc:=
 			  List.fold_left (fun acc x ->
 			    List.fold_left (fun acc y ->
-			      List.fold_left (fun acc z -> If0 (x,y,z)::acc) acc gen3)
+			      List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
 			      acc gen2)
 			    !acc gen1
 		      done;
@@ -140,7 +140,7 @@ let generate, generate_tfold, generate_novar =
 			acc:=
 			  List.fold_left (fun acc x ->
 			    List.fold_left (fun acc y ->
-			      List.fold_left (fun acc z -> If0 (x,y,z)::acc) acc gen3)
+			      List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
 			      acc gen2)
 			    !acc gen1
 		      done;
@@ -153,7 +153,7 @@ let generate, generate_tfold, generate_novar =
 			acc:=
 			  List.fold_left (fun acc x ->
 			    List.fold_left (fun acc y ->
-			      List.fold_left (fun acc z -> If0 (x,y,z)::acc) acc gen3)
+			      List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
 			      acc gen2)
 			    !acc gen1
 		      done;
@@ -170,7 +170,7 @@ let generate, generate_tfold, generate_novar =
 		      acc:=
 			List.fold_left (fun acc x ->
 			  List.fold_left (fun acc y ->
-			    List.fold_left (fun acc z -> If0 (x,y,z)::acc) acc gen3)
+			    List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
 			    acc gen2)
 			  !acc gen1
 		    done;
@@ -199,17 +199,16 @@ let generate, generate_tfold, generate_novar =
       if has_fold then List.rev_append (aux size Required) lst else lst
   in
   (fun ?(filter=true) size ?(exact=true) ops ->
-    generate filter (size-1) exact ops [C0;C1;Var Constants.arg]),
+    generate filter (size-1) exact ops Notations.([c0;c1;mk_arg])),
   (fun ?(filter=true) size ?(exact=true) ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-5 in
     let lst =
-      generate filter size exact ops
-	[Var Constants.fold_acc;Var Constants.fold_arg;C0;C1]
+      generate filter size exact ops Notations.([c0;c1;mk_facc;mk_farg])
     in
-    List.rev_map (fun t -> Fold (Var Constants.arg, C0, t)) lst),
+    List.rev_map (fun t -> Notations.(fold mk_arg c0 t)) lst),
   (fun ?(filter=true) size ?(exact=true) ops ->
-    generate filter (size-1) exact ops [C0;C1])
+    generate filter (size-1) exact ops Notations.([c0;c1]))
 
 let generate_constants ?(filter=true) size ?(exact=true) ops =
   List.rev_map (fun t -> eval t 0L) (generate_novar ~filter ~exact size ops)
