@@ -126,6 +126,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 
   let invite () =
     print_newline ();
+    print_string "(b)est r(e)ndom (g)uess (c)heck_all_equiv";
+    print_newline ();
     print_string "$ "
 
   let rec iloop p (log: Xlog.log) =
@@ -150,7 +152,6 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
       let candidate = choose p in 
       begin match O.guess candidate with 
       | Equiv -> 
-	Printf.printf "found a candidate\n%!";
 	candidate
       | Discr (key, value) -> 
 	let log = Xlog.guess log candidate in 
