@@ -10,6 +10,13 @@ and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
 and op2 = | And | Or | Xor | Plus
 and ident = int
 
+let rec size = function
+  | C0 | C1 | Var _ -> 1
+  | If0 (e,f,g) -> 1 + size e + size f + size g
+  | Fold (e,f,g) -> 2 + size e + size f + size g
+  | Op1 (_, e) -> 1 + size e 
+  | Op2 (_, e, f) -> 1 + size e + size f 
+
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 
   let arg = 0

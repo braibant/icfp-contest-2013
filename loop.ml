@@ -88,7 +88,10 @@ module FState(X:sig val n : int end) = struct
   (* a bitvector representation of a set of the possible programs *)
   type t = Bitv.t 
 
-  let terms = Array.of_list (Generator.generate ~filter:false n (Generator.operators secret))
+  let terms = Array.of_list (Generator.generate ~filter:false (Term.size secret) (Generator.operators secret))
+
+  let _ = Printf.printf "size : %n\n" (Array.length terms)
+    
   let init = Bitv.create (Array.length terms) true
 
   let print (p:t): unit=
