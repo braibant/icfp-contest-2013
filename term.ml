@@ -68,13 +68,14 @@ module HC = Hashcons.Make(struct
 end)
 
 
-
-let rec size = function
-  | C0 | C1 | Var _ -> 1
-  | If0 (e,f,g,_) -> 1 + size e + size f + size g
-  | Fold (e,f,g, _) -> 2 + size e + size f + size g
-  | Op1 (_, e, _) -> 1 + size e
-  | Op2 (_, e, f, _) -> 1 + size e + size f
+let size x =
+  let rec aux = function
+    | C0 | C1 | Var _ -> 1
+    | If0 (e,f,g,_) -> 1 + aux e + aux f + aux g
+    | Fold (e,f,g, _) -> 2 + aux e + aux f + aux g
+    | Op1 (_, e, _) -> 1 + aux e
+    | Op2 (_, e, f, _) -> 1 + aux e + aux f
+  in aux x + 1
 
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 
