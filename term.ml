@@ -44,7 +44,7 @@ let eval =
 		      end
     | Fold (e0,e1,e2) -> 
       let e0 = ref (eval  e0) in 
-      let acc =  ref (eval  e2) in
+      let acc =  ref (eval e1) in
       for i = 0 to 7 do
       (* set the arguments for the fold *)
 	let byte = logand !e0 0xFFL in 
