@@ -74,7 +74,7 @@ module FState(X:sig val n : int end) = struct
     with Found i -> terms.(i)
 
   let print =
-    Bitv.iteri_true (fun i -> Print.(print (doc_exp terms.(i) ^/^ hardline)))
+    Bitv.iteri_true (fun i -> Print.(print_exp_nl terms.(i)))
 end
 
 module State=FState(struct let n = 3 end)
@@ -99,6 +99,9 @@ let rec loop p =
   else loop p
   
     
-(* let _ = State.print State.init *)
-let test = Print.(print (doc_exp (loop State.init)))
+let _ = 
+  Printf.printf "initial state\n";
+  State.print State.init;
+  Printf.printf "result\n";
+  Print.(print_exp (loop State.init))
  
