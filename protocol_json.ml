@@ -33,11 +33,19 @@ let to_int_robust json =
   with exn ->
     try int_of_string (to_string json)
     with _ -> raise exn
-   
+
+let ($) f x = f x
+let protect name f = fun json ->
+  try f json
+  with exn -> 
+    Printf.eprintf "Error when parsing the following input:";
+    pretty_to_channel stderr json;
+    flush stderr;
+    raise exn
 
 (** Problem *)
 
-let problem_of_json (json : json) =
+let problem_of_json = protect "problem" $ fun json ->
   let open Problem.Response in
   let get f = member f json in
   let id = to_string (get "id") in
@@ -57,7 +65,7 @@ let json_of_eval request : json =
   | `Id id -> `Assoc ["id", `String id; arguments ]
   | `Program p -> `Assoc ["program", `String p; arguments ]
 
-let eval_of_json (json : json) =
+let eval_of_json = protect "eval" $ fun json ->
   let open Eval.Response in
   let get f = member f json in
   match to_string (get "status") with
@@ -75,7 +83,7 @@ let json_of_guess request : json =
   let open Guess.Request in
   `Assoc ["id", `String request.id; "program", `String request.program]
 
-let guess_of_json json =
+let guess_of_json = protect "guess" $ fun json ->
   let open Guess.Response in
   let get f = member f json in
   let lightning = to_bool_option (get "lightning") in
@@ -115,7 +123,7 @@ let json_of_training request : json =
       "operators", `List (List.map (fun o -> `String o) s))
   )
 
-let training_of_json (json : json) =
+let training_of_json = protect "training" $ fun json ->
   let open Training.Response in
   let get f = member f json in
   let challenge = to_string (get "challenge") in
@@ -127,8 +135,7 @@ let training_of_json (json : json) =
 
 (** Status *)
 
-let status_of_json (json : json) =
-  pretty_to_channel stderr json;
+let status_of_json = protect "status" $ fun json ->
   let open Status.Response in
   let get f = member f json in
   let easy_chair_id = to_int_robust (get "easyChairId") in
