@@ -82,4 +82,4 @@ module Notations = struct
 end 
 
 let p = let open Notations in Fold (mk_arg, C0, mk_farg || mk_facc)
-let _ = Printf.printf "%Ld\n" (eval p (0x1122334455667788L))
+(* let _ = Printf.printf "%Ld\n" (eval p (0x1122334455667788L)) *)
