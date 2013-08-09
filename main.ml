@@ -10,7 +10,7 @@ module Oracle(X: sig val id : string end) = struct
 
   let guess t =
     let open Guess in 
-      match send_guess (Request.({id = X.id; program = t})) with 
+      match send_guess (Request.({id = X.id; program = Print.sprint (Print.doc_exp t)})) with 
       | `Guess_body ({Response.status=`Win}) -> Loop.Equiv 
       | `Guess_body ({Response.status=`Mismatch m}) -> Loop.Discr (m.Response.input, m.Response.challenge_result )
       | _ -> invalid_arg "eval"
@@ -26,12 +26,13 @@ let train () =
     let secret = Parser.prog_of_string (pb.Response.challenge) in 
     Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
     Print.print_exp_nl secret;
-    let module Oracle = Oracle(struct let secret = secret end) in
+    let module Oracle = Oracle(struct let id= pb.Response.id end) in
     let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in 
-    let module Loop = FState(Params)(Oracle) in 
-  if !Config.interactive_mode 
-  then Loop.iloop ()
-  else Loop.loop ()
+    let module Loop = Loop.FState(Params)(Oracle) in 
+    if !Config.interactive_mode 
+    then Loop.iloop ()
+    else Loop.loop ()
+  | _ -> assert false 
 
 let _ = match send_status () with
   | `Status_body b -> Printf.printf "youhou"
