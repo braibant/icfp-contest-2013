@@ -80,7 +80,10 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     let open Print in 
     separate_map hardline (Print.doc_exp) !l
 
- 
+  let size (p:t) = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p; !r
+
+  let print_short p =  let open Print in string (string_of_int (size p))
+
     
   exception NotEquiv
   let equiv p q a = 
@@ -109,7 +112,6 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   let refine1 p v a = 
     refine p [|v|] [|a|] 
 
-  let size (p:t) = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p; !r
 
   exception Found of int
   let choose p = 
@@ -130,7 +132,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   let rec iloop p (log: Log.log) =
     Print.print (message
       ["current state", Log.print_short log;
-       "possible terms", print p]);
+       "possible terms", print_short p]);
     invite ();
     match read_line () with
     | "e" -> 
@@ -222,8 +224,8 @@ end
 
 let _ =
   Arg.parse args (fun rest -> ()) "usage";
-  Printf.printf "start\n";
-  let secret = Example.examples.(5) in 
+  let secret = Example.gen !Options.problem_size in 
+  Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
   let module Oracle = Oracle(struct let secret = secret end) in
   let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in 
   let module Loop = FState(Params)(Oracle) in 
