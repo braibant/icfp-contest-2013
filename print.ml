@@ -1,6 +1,11 @@
 open Term
 
-let string_of_id s = string_of_int s
+let string_of_id s =
+  match s with
+  | 0 -> "x"
+  | 1 -> "acc"
+  | 2 -> "y"
+
 let string_of_op1 = function
   | Not -> "not"
   | Shl1 -> "shl1"

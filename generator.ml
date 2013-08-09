@@ -76,7 +76,7 @@ let generate, generate_tfold =
 	      if OSet.mem Foldo ops then
 		begin
 		  let acc = ref acc in
-		  for i = 1 to size-3 do
+		  for i = 4 to size-3 do
 		    for j = 1 to size-2-i do
 		      let gen1 = generate i (OSet.remove Foldo ops) atoms in
 		      let gen2 = generate j ops atoms in
@@ -89,8 +89,8 @@ let generate, generate_tfold =
 			  !acc gen1
 		    done;
 		  done;
-		  for i = 1 to size-3 do
-		    for j = 1 to size-2-i do
+		  for i = 1 to size-6 do
+		    for j = 4 to size-2-i do
 		      let gen1 = generate i ops atoms in
 		      let gen2 = generate j (OSet.remove Foldo ops) atoms in
 		      let gen3 = generate (size-1-i-j) ops atoms in
@@ -102,8 +102,8 @@ let generate, generate_tfold =
 			  !acc gen1
 		    done;
 		  done;
-		  for i = 1 to size-3 do
-		    for j = 1 to size-2-i do
+		  for i = 1 to size-6 do
+		    for j = 1 to size-5-i do
 		      let gen1 = generate i ops atoms in
 		      let gen2 = generate j ops atoms in
 		      let gen3 = generate (size-1-i-j) (OSet.remove Foldo ops) atoms in
@@ -150,17 +150,16 @@ let generate, generate_tfold =
 	      done;
 	    done;
 	    !acc)
-	  ops atoms
+	  ops []
   in
   (fun size ops ->
-    List.filter (fun t -> operators t = ops)
+    List.filter (fun t -> OSet.equal (operators t) ops)
       (generate size ops [C0;C1;Var Constants.arg])),
   (fun size ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-3 in
     let lst =
-      List.filter (fun t -> operators t = ops)
+      List.filter (fun t -> OSet.equal (operators t) ops)
 	(generate size ops [Var Constants.fold_acc;Var Constants.fold_arg;C0;C1])
     in
-    List.map (fun t -> Fold (Var Constants.arg, C0, t)) lst
-)
+    List.map (fun t -> Fold (Var Constants.arg, C0, t)) lst)
