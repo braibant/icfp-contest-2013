@@ -21,7 +21,7 @@ end
 
 let train () =
   let open Training in 
-  match send_training ({Protocol.Training.Request.size = Some 4; Protocol.Training.Request.operators = Some []}) with
+  match send_training ({Protocol.Training.Request.size = Some !Config.problem_size; Protocol.Training.Request.operators = Some []}) with
   | `Training_body pb ->
     let secret = Parser.prog_of_string (pb.Response.challenge) in 
     Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);

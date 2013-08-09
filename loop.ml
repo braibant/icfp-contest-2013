@@ -209,39 +209,39 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 end
 
 
-(* Oracle *)
-module Oracle(S: sig val secret : Term.exp end)  = struct
-  include S
-  let eval v = evalv v secret
+(* (\* Oracle *\) *)
+(* module Oracle(S: sig val secret : Term.exp end)  = struct *)
+(*   include S *)
+(*   let eval v = evalv v secret *)
 
-  let discriminating n = Array.init n (fun x -> Random.int64 Int64.max_int)
+(*   let discriminating n = Array.init n (fun x -> Random.int64 Int64.max_int) *)
 
-  let guess p' =
-    let confidence = 10000 in 
-    let tests = discriminating confidence in 
-    let rec aux i = 
-      if i = confidence - 1 then Equiv 
-      else
-	let x = tests.(i) in
-	if Term.eval p' x = Term.eval secret x 
-	then aux (succ i)
-	else Discr (x,Term.eval secret x)
-    in aux 0
+(*   let guess p' = *)
+(*     let confidence = 10000 in  *)
+(*     let tests = discriminating confidence in  *)
+(*     let rec aux i =  *)
+(*       if i = confidence - 1 then Equiv  *)
+(*       else *)
+(* 	let x = tests.(i) in *)
+(* 	if Term.eval p' x = Term.eval secret x  *)
+(* 	then aux (succ i) *)
+(* 	else Discr (x,Term.eval secret x) *)
+(*     in aux 0 *)
 
-  let reveal () = secret       
-end
+(*   let reveal () = secret        *)
+(* end *)
 
 
-let _ =
-  Arg.parse Config.args (fun rest -> ()) "usage";
-  let secret = Example.gen !Config.problem_size in 
-  Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
-  let module Oracle = Oracle(struct let secret = secret end) in
-  let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in 
-  let module Loop = FState(Params)(Oracle) in 
-  if !Config.interactive_mode 
-  then Loop.iloop ()
-  else Loop.loop ()
+(* let _ = *)
+(*   Arg.parse Config.args (fun rest -> ()) "usage"; *)
+(*   let secret = Example.gen !Config.problem_size in  *)
+(*   Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret); *)
+(*   let module Oracle = Oracle(struct let secret = secret end) in *)
+(*   let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in  *)
+(*   let module Loop = FState(Params)(Oracle) in  *)
+(*   if !Config.interactive_mode  *)
+(*   then Loop.iloop () *)
+(*   else Loop.loop () *)
 
   
 
