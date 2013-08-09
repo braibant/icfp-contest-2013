@@ -30,9 +30,9 @@ let eval =
 		    begin match op with 
 		    | Not -> lognot e
 		    | Shl1 -> shift_left e 1
-		    | Shr1 -> shift_right e 1
-		    | Shr4 -> shift_right e 4
-		    | Shr16 -> shift_right e 16
+		    | Shr1 -> shift_right_logical e 1
+		    | Shr4 -> shift_right_logical e 4
+		    | Shr16 -> shift_right_logical e 16
 		    end
     | Op2 (op,e,f) -> let e = eval  e in
 		      let f = eval  f in 
@@ -53,7 +53,7 @@ let eval =
       (* compute the new value of acc *)
 	acc := eval e2;
       (* shift e0 *)
-	e0 := shift_right !e0 2;
+	e0 := shift_right_logical !e0 2;
       done;
       !acc
   in
