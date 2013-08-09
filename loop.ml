@@ -6,28 +6,10 @@ let evalv v p = Array.map (Term.eval p) v
 
 type guess_result = Discr of int64 * int64 | Equiv
 
-(* Oracle *)
-module Sim(Secret : sig val secret : Term.exp end)  = struct
-  include Secret
-  let eval v = evalv v secret
-
-  let guess p' =
-    let confidence = 10000 in 
-    let tests = discriminating () confidence in 
-    let rec aux i = 
-      if i = confidence - 1 then Equiv 
-      else
-	let x = tests.(i) in
-	if Term.eval p' x = Term.eval secret x 
-	then aux (succ i)
-	else Discr (x,Term.eval secret x)
-    in aux 0      
+module type ORACLE = sig
+  val eval : int64 array -> int64 array
+  val guess : Term.exp -> guess_result
 end
-
-open Term 
-
-let secret =  let open Notations in  mk_arg ++ C1 				   
-module Test = Sim (struct open Term open Term.Notations let secret = secret  end)   
 
 module Log = struct
   module IMap = Map.Make (struct type t = int64 let compare = Int64.compare end)
@@ -66,7 +48,7 @@ module Log = struct
   let print ((t,g): log)= 
     let open PPrint in 
     let int64 n = string (Printf.sprintf "0x%Lx" n) in
-    let t = group (separate_map (semi ^^ break 1) (fun (x, y) -> parens (int64 x ^/^ int64 y)) (IMap.bindings t)) in
+    let t = group (separate_map (semi ^^ break 1) (fun (x, y) -> group (parens (int64 x ^/^ int64 y))) (IMap.bindings t)) in
     let g = group (separate_map (semi) Print.doc_exp g) in 
     group (prefix 2 1 (string "(* evals *)") t) ^^ hardline ^^
     group (prefix 2 1 (string "(* guesses *)") g) ^^ hardline 
@@ -83,16 +65,20 @@ module Log = struct
 end
 
 (* Client *)
-module FState(X:sig val n : int end) = struct
+module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = struct
   include X
+
   (* a bitvector representation of a set of the possible programs *)
   type t = Bitv.t 
 
-  let terms = Array.of_list (Generator.generate ~filter:false (Term.size secret) (Generator.operators secret))
+  let terms = Array.of_list (Generator.generate ~filter:false n ops)
   let init = Bitv.create (Array.length terms) true
 
-  let print (p:t): unit=
-    Bitv.iteri_true (fun i -> Print.(print_exp_nl terms.(i))) p
+  let print (p:t)=
+    let l = ref [] in
+    Bitv.iteri_true (fun i -> l := terms.(i) :: !l) p;
+    let open Print in 
+    separate_map hardline (Print.doc_exp) !l
 
  
     
@@ -133,20 +119,29 @@ module FState(X:sig val n : int end) = struct
     with Found i -> terms.(i)
 
 
+  let rec message l =
+    let open Print in 
+    separate_map hardline (fun (msg,doc) -> group (prefix 2 1 (string msg) doc)) l
+
+  let invite () =
+    print_newline ();
+    print_string "$ "
+
   let rec iloop p (log: Log.log) =
-    Print.(print (string "current state" ^//^ Log.print_short log));
-    Printf.printf "current possible terms\n";
-    print p;
+    Print.print (message
+      ["current state", Log.print_short log;
+       "possible terms", print p]);
+    invite ();
     match read_line () with
     | "e" -> 
       let keys = discriminating p 256 in 
-      let values = Test.eval keys in 
+      let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
       iloop p (Log.logv log keys values)
     | "g" -> 
       let candidate = choose p in 
-      begin match Test.guess candidate with 
+      begin match O.guess candidate with 
       | Equiv -> candidate
       | Discr (key, value) -> 
 	let log = Log.guess log candidate in 
@@ -160,9 +155,11 @@ module FState(X:sig val n : int end) = struct
     | "s" -> 
       Log.save !Options.logfile log;
       iloop p log 
+    | "p" ->
+      Print.print (Log.print log);
+      iloop p log 
     | _ ->
       iloop p log 
-
          
   let iloop () = 
     let r = iloop init Log.empty in 
@@ -173,13 +170,13 @@ module FState(X:sig val n : int end) = struct
   let rec loop p = 
     (* Printf.eprintf "size:%i\n" (State.size p); *)
     let values = discriminating p 256 in 
-    let answers = Test.eval values in 
+    let answers = O.eval values in 
     let refined,p = refine p values answers in 
     if size p = 1 || not refined
     then 
       begin 
 	let candidate = choose p in
-	match Test.guess candidate with 
+	match O.guess candidate with 
 	| Equiv -> candidate
 	| Discr (value, answer) -> 
 	  let refined,p = refine1 p value answer in 
@@ -200,12 +197,36 @@ let args =
   let open Arg in 
   ["-o", Set_string Options.logfile, " set log file";
    "-i", Set Options.interactive_mode, " interactive mode" ;
-   "-n", Set_int Options.problem_size, " set problem size"]
+   "-n", Set_int Options.problem_size, " set problem size";
+   "-s", Set_string Options.secret, " set the secret (debug)"]
+
+
+(* Oracle *)
+module Oracle(S: sig val secret : Term.exp end)  = struct
+  include S
+  let eval v = evalv v secret
+
+  let guess p' =
+    let confidence = 10000 in 
+    let tests = discriminating () confidence in 
+    let rec aux i = 
+      if i = confidence - 1 then Equiv 
+      else
+	let x = tests.(i) in
+	if Term.eval p' x = Term.eval secret x 
+	then aux (succ i)
+	else Discr (x,Term.eval secret x)
+    in aux 0      
+end
+
 
 let _ =
   Arg.parse args (fun rest -> ()) "usage";
-  
-  let module Loop = FState (struct let n = !Options.problem_size end) in 
+  Printf.printf "start\n";
+  let secret = Example.examples.(5) in 
+  let module Oracle = Oracle(struct let secret = secret end) in
+  let module Params = struct let n = Term.size secret let ops = Generator.operators secret end in 
+  let module Loop = FState(Params)(Oracle) in 
   if !Options.interactive_mode 
   then Loop.iloop ()
   else Loop.loop ()
