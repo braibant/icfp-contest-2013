@@ -1,0 +1,7 @@
+#use "topfind";;
+#require "pprint";;
+#require "bitv";;
+#require "yojson";;
+#require "netclient";;
+#directory "_build";;
+#load "_build/icfp.cma";;

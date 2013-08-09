@@ -34,5 +34,7 @@ let gen =
 
 let examples = Array.init 50 (fun _ -> gen 10)
 
-let _ = Array.iter (fun x -> Print.(print (doc_exp x ^/^ hardline))) examples
+let _ =
+  if not !Sys.interactive then
+    Array.iter (fun x -> Print.(print (doc_exp x ^/^ hardline))) examples
 
