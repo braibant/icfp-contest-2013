@@ -64,6 +64,9 @@ let sprint doc : string =
   ToBuffer.pretty 1. 72 b doc;
   Buffer.contents b
 
+let print_program t =
+  sprint (doc_sexp (sexp_lam1 ( t) ))
+
 let print_exp e = print (doc_exp e)
 let print_exp_nl e = print (doc_exp e ^^ hardline)
 
