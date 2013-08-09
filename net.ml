@@ -26,7 +26,7 @@ let unknown_code name n =
 
 let send_myproblems () =
   let name = name `Problem in
-  let call = new post_raw name "" in
+  let call = new post_raw (addr name) "" in
   match (response call) # response_status_code with
     | 403 -> `Authorization_required
     | 429 -> `Try_again_later
@@ -40,7 +40,7 @@ let send_myproblems () =
 let send_eval request =
   let name = name `Eval in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_eval request) in
-  let call = new post_raw name body in
+  let call = new post_raw (addr name) body in
   match (response call) # response_status_code with
     | 400 -> `Bad_request
     | 401 -> `Unauthorized
@@ -57,7 +57,7 @@ let send_eval request =
 let send_guess request =
   let name = name `Guess in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_guess request) in
-  let call = new post_raw name body in
+  let call = new post_raw (addr name) body in
   match (response call) # response_status_code with
     | 400 -> `Bad_request
     | 401 -> `Unauthorized
@@ -74,7 +74,7 @@ let send_guess request =
 let send_training request =
   let name = name `Training in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_eval request) in
-  let call = new post_raw name body in
+  let call = new post_raw (addr name) body in
   match (response call) # response_status_code with
     | 400 -> `Bad_request
     | 403 -> `Authorization_required
@@ -87,7 +87,7 @@ let send_training request =
 
 let send_status request =
   let name = name `Status in
-  let call = new post_raw name "" in
+  let call = new post_raw (addr name) "" in
   match (response call) # response_status_code with
     | 400 -> `Bad_request
     | 403 -> `Authorization_required
