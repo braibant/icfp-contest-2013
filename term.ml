@@ -3,24 +3,67 @@ type exp =
 | C1 
 | Var of ident 
 | If0 of exp * exp * exp 
-| Fold of exp * exp * (ident * ident * exp) 
+| Fold of exp * exp * exp 
 | Op1 of op1 * exp 
 | Op2 of op2 * exp * exp
 and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
 and op2 = | And | Or | Xor | Plus
-and ident = string
-  
-(* open Int64 *)
+and ident = int
 
-(* let eval = function *)
-(*   | C0 -> 0L   *)
-(*   | C1 -> 1L *)
-(*   | Var id -> ;; *)
+(* There is at most three variables in the terms, hence, we can define them statically *)
+module Constants = struct 
+  let arg = 0
+  let fold_acc = 1
+  let fold_arg = 2
+end
 
-(*   | Var of ident  *)
-(* | If0 of exp * exp * exp  *)
-(* | Fold of exp * exp * (ident * ident * exp)  *)
-(* | Op1 of op1 * exp  *)
-(* | Op2 of op2 * exp * exp *)
+open Int64
 
+let eval =
+  let env = Array.create 3 0L in 
+  let rec eval = function
+    | C0 -> 0L  
+    | C1 -> 1L
+    | Var id -> env.(id)
+    | If0 (e1,e2,e3) -> if eval  e1 = 0L then eval  e2 else eval  e3
+    | Op1 (op,e) -> let e = eval  e in 
+		    begin match op with 
+		    | Not -> lognot e
+		    | Shl1 -> shift_left e 1
+		    | Shr1 -> shift_right e 1
+		    | Shr4 -> shift_right e 4
+		    | Shr16 -> shift_right e 16
+		    end
+    | Op2 (op,e,f) -> let e = eval  e in
+		      let f = eval  f in 
+		      begin match op with
+		      | And -> logand e f
+		      | Or -> logor e f
+		      | Xor -> logxor e f
+		      | Plus -> add e f
+		      end
+    | Fold (e0,e1,e2) -> 
+      let e0 = ref (eval  e0) in 
+      let acc =  ref (eval  e2) in
+      for i = 0 to 7 do
+      (* set the arguments for the fold *)
+	let byte = logand !e0 0xFFL in 
+	env.(Constants.fold_arg) <- byte;
+	env.(Constants.fold_acc) <- !acc;
+      (* compute the new value of acc *)
+	acc := eval e2;
+      (* shift e0 *)
+	e0 := shift_right !e0 2;
+      done;
+      !acc
+  in
+  fun p x -> env.(Constants.arg) <- x; eval p
+;;
+
+
+let mk_arg = Var (Constants.arg)
+let mk_facc = Var (Constants.fold_acc)
+let mk_farg = Var (Constants.fold_arg) 
+let p = Fold (mk_arg, C0, Op2(Or,mk_farg,mk_facc))
+let _ = Printf.printf "%Ld\n" (eval p (0x1122334455667788L))
 	     
