@@ -6,12 +6,8 @@ External dependencies:
 - JSON serialization: yojson
     opam install yojson
 
-- Network communication: ocurl
-    opam install ocurl
-
-  You need to have "libcurl" installed on your system. On Debian I had
-  to do (the "libcurl-dev" package was ambiguous):
-    sudo aptitude install libcurl4-openssl-dev
+- Networking: ocamlnet
+    opam install ocamlnet
 
 - Bit vectors implementation: bitv
     opam install bitv
