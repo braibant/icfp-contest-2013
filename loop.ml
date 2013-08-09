@@ -1,16 +1,16 @@
 (* discriminate evaluate loop *)
-
-let discriminating _ n = Array.init n (fun x -> Random.int64 Int64.max_int)
+let rnd64 () = if Random.bool () then  Random.int64 Int64.max_int
+  else Int64.neg (Random.int64 Int64.max_int)
 
 let evalv v p = Array.map (Term.eval p) v
 
-type guess_result = Discr of int64 * int64 | Equiv
+type guess_result = Discr of int64 * int64 | Equiv 
 
 module type ORACLE = sig
   val eval : int64 array -> int64 array
   val guess : Term.exp -> guess_result
+  val reveal : unit  -> Term.exp 
 end
-
 
 (* Client *)
 module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = struct
@@ -32,7 +32,43 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 
   let print_short p =  let open Print in string (string_of_int (size p))
 
+  exception End
+  let iter2 f p =
+    Bitv.iteri_true 
+      (fun x -> 
+	try 
+	  Bitv.iteri_true (fun y -> if x < y then f terms.(x) terms.(y) else raise End) p
+	with End -> ()) p
+
+  (* find the n  indices that maximizes v.(n) (yet give different values to v.(n))  *)
+  let maxn n v = 
+    let s = Array.init (Array.length v) (fun i -> i) in 
+    let compare x y = Pervasives.compare v.(y) v.(x) in 
+    (Array.sort compare s);
+    Array.sub s 0 n
+   
+  (* find the values that discriminate the most *)
+  let best p =
+    let n = 100_000 in 
+    let v = Array.init n (fun _ -> rnd64 ()) in 
+    let d = Array.create n 0 in
+    iter2 
+      (fun p1 p2 ->
+	for i = 0 to n - 1 do
+	  let x = v.(i) in 
+	  if Term.eval p1 x <> Term.eval p2 x 
+	  then d.(i) <- d.(i)+1
+	done) p;
+    (* What are the best 256 discriminating values ? *)
+    let r = Array.map (fun i -> v.(i)) (maxn 256 d) in 
+    (* Array.iteri (fun i x -> Printf.printf "%i %s\n" i (Int64.to_string x)) r; *)
+    r
+
+  (* if we cannot find values that would make progress, we have to make a guess. *)
     
+    
+	
+				      
   exception NotEquiv
   let equiv p q a = 
     let n = Array.length q in 
@@ -84,7 +120,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     invite ();
     match read_line () with
     | "e" -> 
-      let keys = discriminating p 256 in 
+      let keys = best p in 
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
@@ -115,12 +151,14 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   let iloop () = 
     let r = iloop init Log.empty in 
     Printf.printf "result\n";
-    Print.(print_exp r)
+    Print.(print_exp_nl r);
+    Printf.printf "secret\n";
+    Print.(print_exp_nl (O.reveal ()))
 
 
   let rec loop p = 
     (* Printf.eprintf "size:%i\n" (State.size p); *)
-    let values = discriminating p 256 in 
+    let values = best p in 
     let answers = O.eval values in 
     let refined,p = refine p values answers in 
     if size p = 1 || not refined
@@ -158,9 +196,11 @@ module Oracle(S: sig val secret : Term.exp end)  = struct
   include S
   let eval v = evalv v secret
 
+  let discriminating n = Array.init n (fun x -> Random.int64 Int64.max_int)
+
   let guess p' =
     let confidence = 10000 in 
-    let tests = discriminating () confidence in 
+    let tests = discriminating confidence in 
     let rec aux i = 
       if i = confidence - 1 then Equiv 
       else
@@ -168,7 +208,9 @@ module Oracle(S: sig val secret : Term.exp end)  = struct
 	if Term.eval p' x = Term.eval secret x 
 	then aux (succ i)
 	else Discr (x,Term.eval secret x)
-    in aux 0      
+    in aux 0
+
+  let reveal () = secret       
 end
 
 

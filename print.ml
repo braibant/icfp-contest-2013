@@ -28,7 +28,7 @@ let rec sexp_exp = function
   | C1 -> Word "1"
   | Var x -> Word (string_of_id x)
   | If0 (p, a, b) ->
-    List [Word "if0"; sexp_exp a; sexp_exp b]
+    List [Word "if0"; sexp_exp p; sexp_exp a; sexp_exp b]
   | Fold (bytes, init, lam) ->
     List [Word "fold"; sexp_exp bytes; sexp_exp init; sexp_lam2 lam]
   | Op1 (op, e) -> List [Word (string_of_op1 op); sexp_exp e]
