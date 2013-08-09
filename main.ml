@@ -34,6 +34,6 @@ let train () =
     else Loop.loop ()
   | _ -> assert false 
 
-let _ = match send_status () with
-  | `Status_body b -> Printf.printf "youhou"
-  | _ -> assert false
+let _ =
+  Arg.parse Config.args (fun rest -> ()) "usage";
+  train ()

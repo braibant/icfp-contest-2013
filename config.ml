@@ -4,3 +4,11 @@ let logfile = ref "logfile"
 let interactive_mode = ref false 
 let problem_size = ref 4
 let secret = ref "(lambda (x) (plus x 1))"
+
+
+let args = 
+  let open Arg in 
+  ["-o", Set_string logfile, " set log file";
+   "-i", Set interactive_mode, " interactive mode" ;
+   "-n", Set_int problem_size, " set problem size";
+   "-s", Set_string secret, " set the secret (debug)"]
