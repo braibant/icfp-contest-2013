@@ -7,6 +7,13 @@ type op =
 | Op2o of op2
 
 module OSet = Set.Make(struct type t=op let compare=compare end)
+(* all operators *)
+let top =
+  let l1 = List.map (fun x -> Op2o x) [And; Or; Xor; Plus;] in 
+  let l2 = List.map (fun x -> Op1o x) [Not ; Shl1 ; Shr1 ; Shr4 ; Shr16] in 
+  let l3 = [If0o; Foldo] in 
+  let l = List.fold_right OSet.add (l1 @ l2 @ l3) OSet.empty in 
+  l
 
 let operators t =
   let rec operators t acc =
