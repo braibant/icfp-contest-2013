@@ -59,7 +59,7 @@ let generate, generate_tfold, generate_novar =
 		    let genr = generate (size-1-i) ops atoms in
 		    acc:=
 		      List.fold_left (fun acc x ->
-			List.fold_left (fun acc y -> 
+			List.fold_left (fun acc y ->
 			  if i = size-1-i && y < x then acc
 			  else Op2 (op,x,y)::acc)
 			  acc genr)
@@ -135,7 +135,7 @@ let generate, generate_tfold, generate_novar =
 		let gen2 = generate j (OSet.remove Foldo ops)
 		    (Var Constants.fold_acc::Var Constants.fold_arg::atoms)
 		in
-		let gen3 = generate (size-1-i-j) ops atoms in
+		let gen3 = generate (size-1-i-j) (OSet.remove Foldo ops) atoms in
 		acc:=
 		  List.fold_left (fun acc x ->
 		    List.fold_left (fun acc y ->
@@ -147,17 +147,28 @@ let generate, generate_tfold, generate_novar =
 	    !acc)
 	  ops []
   in
-  (fun size ops ->
-    List.filter (fun t -> OSet.equal (operators t) ops)
-      (generate size ops [C0;C1;Var Constants.arg])),
-  (fun size ops ->
+  let generate_filter filter size ops atoms =
+    let lst =
+      if not filter && OSet.mem Foldo ops then
+	List.rev_append (generate size (OSet.remove Foldo ops) atoms)
+	                (generate size ops atoms)
+      else
+	generate size ops atoms
+    in
+    if filter then List.filter (fun t -> OSet.equal (operators t) ops) lst
+    else lst
+  in
+  (fun ?(filter=true) size ops ->
+    (generate_filter filter size ops [C0;C1;Var Constants.arg])),
+  (fun ?(filter=true) size ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-3 in
     let lst =
-      List.filter (fun t -> OSet.equal (operators t) ops)
-	(generate size ops [Var Constants.fold_acc;Var Constants.fold_arg;C0;C1])
+      generate_filter filter  size ops
+	[Var Constants.fold_acc;Var Constants.fold_arg;C0;C1]
     in
-    List.map (fun t -> Fold (Var Constants.arg, C0, t)) lst),
-  (fun size ops ->
-    List.filter (fun t -> OSet.equal (operators t) ops)
-      (generate size ops [C0;C1]))
+    List.rev_map (fun t -> Fold (Var Constants.arg, C0, t)) lst),
+  (fun ?(filter=true) size ops -> generate_filter filter size ops [C0;C1])
+
+let generate_constants ?(filter=true) size ops =
+  List.rev_map (fun t -> eval t 0L) (generate_novar ~filter size ops)
