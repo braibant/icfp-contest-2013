@@ -34,10 +34,10 @@ module Log = struct
 
   include IMap
 
-  type log = int64 IMap.t 
+  type log = 
+    int64 IMap.t * Term.exp list
 
-
-
+  let empty = IMap.empty, []
   let save n t = 
     let o = open_out n in 
       Marshal.to_channel o t [];
@@ -48,22 +48,37 @@ module Log = struct
     let x = (Marshal.from_channel i : log) in 
     close_in i; x
 
-  let logv t keys values =
+  let logv ((t,g): log) keys values =
     let n = Array.length keys in 
     assert (n = Array.length values);
     let t = ref t in 
     for i = 0 to n - 1 do
       t := add keys.(i) values.(i) !t
     done; 
-    !t
+    !t,g
 
-  let log (t: log) key value =
-      add key value t
+  let log ((t,g): log) key value =
+      add key value t,g
 
-  let print = 
+  let guess (t,g) guess = 
+    t, guess :: g
+
+  let print ((t,g): log)= 
     let open PPrint in 
     let int64 n = string (Printf.sprintf "0x%Lx" n) in
-    separate_map (semi ^^ break 1) (fun (x, y) -> parens (int64 x ^/^ int64 y))
+    let t = group (separate_map (semi ^^ break 1) (fun (x, y) -> parens (int64 x ^/^ int64 y)) (IMap.bindings t)) in
+    let g = group (separate_map (semi) Print.doc_exp g) in 
+    group (prefix 2 1 (string "(* evals *)") t) ^^ hardline ^^
+    group (prefix 2 1 (string "(* guesses *)") g) ^^ hardline 
+      
+  let print_short (t,g) =
+    let open PPrint in 
+    let t = List.length (IMap.bindings t) in 
+    let g = List.length g in 
+    let int n= string (Printf.sprintf "%i" n ) in 
+    group (prefix 2 1 (string "(* evals *)") (int t)) ^^ hardline ^^
+    group (prefix 2 1 (string "(* guesses *)") (int g)) ^^ hardline 
+
  
 end
 
@@ -73,9 +88,15 @@ module FState(X:sig val n : int end) = struct
   (* a bitvector representation of a set of the possible programs *)
   type t = Bitv.t 
 
-  let terms = Array.of_list (Generator.generate n (Generator.operators secret))
+  let terms = Array.of_list (Generator.generate ~filter:false n (Generator.operators secret))
   let init = Bitv.create (Array.length terms) true
 
+  let print (p:t): unit=
+    Bitv.iteri_true (fun i -> Print.(print_exp_nl terms.(i))) p
+
+  let () = print init
+
+    
   exception NotEquiv
   let equiv p q a = 
     let n = Array.length q in 
@@ -112,14 +133,42 @@ module FState(X:sig val n : int end) = struct
       raise Not_found
     with Found i -> terms.(i)
 
-  let print =
-    Bitv.iteri_true (fun i -> Print.(print_exp_nl terms.(i)))
+
+  let rec iloop p (log: Log.log) =
+    Print.(print (string "current state" ^//^ Log.print_short log));
+    print p;
+    match read_line () with
+    | "e" -> 
+      let keys = discriminating p 256 in 
+      let values = Test.eval keys in 
+      let refined,p = refine p keys values in 
+      Printf.printf "refined: %b\n" refined;
+      iloop p (Log.logv log keys values)
+    | "g" -> 
+      let candidate = choose p in 
+      begin match Test.guess candidate with 
+      | Equiv -> candidate
+      | Discr (key, value) -> 
+	let log = Log.guess log candidate in 
+	let log = Log.log log key value in 
+	let refined,p = refine1 p key value in 
+	Printf.printf "refined: %b\n" refined;	
+	iloop p log
+      end
+    | "q" -> 
+      exit 0
+    | "s" -> 
+      Log.save !Options.logfile log;
+      iloop p log 
+    | _ ->
+      iloop p log 
+
+         
+  let iloop () = 
+    Printf.printf "result\n";
+    Print.(print_exp (iloop init Log.empty))
 
 
-
-  (* the main loop function:
-     - it logs the previous queries and answers from the server in a text file
-  *)
   let rec loop p = 
     (* Printf.eprintf "size:%i\n" (State.size p); *)
     let values = discriminating p 256 in 
@@ -139,15 +188,27 @@ module FState(X:sig val n : int end) = struct
       end
     else loop p
       
+  let loop () = 
+    Printf.printf "result\n";
+    Print.(print_exp (loop init))
+
 end
 
-module State=FState (struct let n = 3 end)
+let args = 
+  let open Arg in 
+  ["-o", Set_string Options.logfile, " set log file";
+   "-i", Set Options.interactive_mode, " interactive mode" ;
+   "-n", Set_int Options.problem_size, " set problem size"]
+
+let _ =
+  Arg.parse args (fun rest -> ()) "usage";
+  
+  let module Loop = FState (struct let n = !Options.problem_size end) in 
+  if !Options.interactive_mode 
+  then Loop.iloop ()
+  else Loop.loop ()
+
+  
 
   
     
-let _ = 
-  Printf.printf "initial state\n";
-  State.print State.init;
-  Printf.printf "result\n";
-  Print.(print_exp (State.(loop init)))
- 
