@@ -132,7 +132,7 @@ module Guess = struct
   type return = [
   | (* 200 *) `Guess_body of Response.response
   | (* 400 *) `Bad_request (* some input is not well-formed *)
-  | (* 401 *) `Unauthorize (* problem was not request by the current user *)
+  | (* 401 *) `Unauthorized (* problem was not request by the current user *)
   | (* 404 *) `Not_found (* no such challenge *)
   | (* 410 *) `Gone (* problem requested more than 5 minutes ago *)
   | (* 412 *) `Already_solved (* problem was already solved by current user *)

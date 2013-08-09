@@ -1,1 +1,2 @@
 true: package(pprint), package(bitv), package(yojson)
+<net.*>: package(netclient)

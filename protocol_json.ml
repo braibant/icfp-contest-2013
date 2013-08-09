@@ -1,4 +1,5 @@
 open Protocol
+open Yojson.Basic
 open Yojson.Basic.Util
 
 let json_of_int64 n =
@@ -15,7 +16,7 @@ let int64_array_of_json json =
 
 (** Problem *)
 
-let problem_of_json json =
+let problem_of_json (json : json) =
   let open Problem.Response in
   let get f = member f json in
   let id = to_string (get "id") in
@@ -28,14 +29,14 @@ let problem_of_json json =
 
 (** Eval *)
 
-let json_of_eval request =
+let json_of_eval request : json =
   let open Eval.Request in
   let arguments = "arguments", json_of_int64_array request.arguments in
   match request.name with
   | `Id id -> `Assoc ["id", `String id; arguments ]
   | `Program p -> `Assoc ["program", `String p; arguments ]
 
-let eval_of_json json =
+let eval_of_json (json : json) =
   let open Eval.Response in
   let get f = member f json in
   match to_string (get "status") with
@@ -49,9 +50,9 @@ let eval_of_json json =
 
 (** Guesses *)
 
-let json_of_guess request =
+let json_of_guess request : json =
   let open Guess.Request in
-  `Assoc ["id", request.id; "program", request.program]
+  `Assoc ["id", `String request.id; "program", `String request.program]
 
 let guess_of_json json =
   let open Guess.Response in
@@ -82,7 +83,7 @@ let guess_of_json json =
 
 (** Training *)
 
-let json_of_training request =
+let json_of_training request : json =
   let maybe m f = match m with
     | None -> []
     | Some x -> [f x] in
@@ -93,7 +94,7 @@ let json_of_training request =
       "operators", `List (List.map (fun o -> `String o) s))
   )
 
-let training_of_json json =
+let training_of_json (json : json) =
   let open Training.Response in
   let get f = member f json in
   let challenge = to_string (get "challenge") in
@@ -105,7 +106,7 @@ let training_of_json json =
 
 (** Status *)
 
-let status_of_json json =
+let status_of_json (json : json) =
   let open Status.Response in
   let get f = member f json in
   let easy_chair_id = to_int (get "easyChairId") in
