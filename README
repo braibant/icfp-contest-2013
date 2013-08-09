@@ -1,0 +1,7 @@
+External dependencies:
+
+- pprint (ocamlfind package)
+  http://gallium.inria.fr/~fpottier/pprint/pprint-20130324.tar.gz
+
+- yojson (ocamlfind package)
+  opam install yojson
