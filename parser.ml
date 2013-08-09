@@ -97,6 +97,11 @@ let bind v t =
 let bind_prog v (`Lam (_x, e)) = bind v e
 
 let prog_of_string str =
-  let term_with_vars = LambdaGram.parse_string prog (Loc.mk "lalala") str in
-  let vars = collect_prog term_with_vars in
-  bind_prog vars term_with_vars
+  try
+    let term_with_vars = LambdaGram.parse_string prog (Loc.mk "lalala") str in
+    let vars = collect_prog term_with_vars in
+    bind_prog vars term_with_vars
+  with Loc.Exc_located (loc, exn) ->
+    Loc.print Format.err_formatter loc;
+    Format.eprintf "Error %S in the parser\n%s%!" (Printexc.to_string exn) str;
+    raise exn
