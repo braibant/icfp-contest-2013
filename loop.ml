@@ -89,16 +89,12 @@ module FState(X:sig val n : int end) = struct
   type t = Bitv.t 
 
   let terms = Array.of_list (Generator.generate ~filter:false (Term.size secret) (Generator.operators secret))
-
-  let _ = Printf.printf "size : %n\n" (Array.length terms)
-    
   let init = Bitv.create (Array.length terms) true
 
   let print (p:t): unit=
     Bitv.iteri_true (fun i -> Print.(print_exp_nl terms.(i))) p
 
-  let () = print init
-
+ 
     
   exception NotEquiv
   let equiv p q a = 
@@ -139,6 +135,7 @@ module FState(X:sig val n : int end) = struct
 
   let rec iloop p (log: Log.log) =
     Print.(print (string "current state" ^//^ Log.print_short log));
+    Printf.printf "current possible terms\n";
     print p;
     match read_line () with
     | "e" -> 
@@ -168,8 +165,9 @@ module FState(X:sig val n : int end) = struct
 
          
   let iloop () = 
+    let r = iloop init Log.empty in 
     Printf.printf "result\n";
-    Print.(print_exp (iloop init Log.empty))
+    Print.(print_exp r)
 
 
   let rec loop p = 
@@ -192,8 +190,9 @@ module FState(X:sig val n : int end) = struct
     else loop p
       
   let loop () = 
+    let r =  (loop init) in 
     Printf.printf "result\n";
-    Print.(print_exp (loop init))
+    Print.(print_exp r)
 
 end
 
