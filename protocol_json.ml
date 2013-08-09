@@ -14,6 +14,27 @@ let json_of_int64_array arr =
 let int64_array_of_json json =
   Array.of_list (List.map int64_of_json (Yojson.Basic.Util.to_list json))
 
+(* this is necessary because of the following 
+   where easyChairId is supposed to be int
+   {
+     "easyChairId": "243",
+     "contestScore": 0,
+    "lightningScore": 0,
+    "trainingScore": 0,
+    "mismatches": 0,
+    "numRequests": 32,
+    "requestWindow": { "resetsIn": 9.478999999999999, "amount": 1, "limit": 5 },
+    "cpuWindow": { "resetsIn": 49.479, "amount": 0.8, "limit": 20 },
+    "cpuTotalTime": 24.8
+   }
+*)
+let to_int_robust json =
+  try to_int json
+  with exn ->
+    try int_of_string (to_string json)
+    with _ -> raise exn
+   
+
 (** Problem *)
 
 let problem_of_json (json : json) =
@@ -107,16 +128,17 @@ let training_of_json (json : json) =
 (** Status *)
 
 let status_of_json (json : json) =
+  pretty_to_channel stderr json;
   let open Status.Response in
   let get f = member f json in
-  let easy_chair_id = to_int (get "easyChairId") in
+  let easy_chair_id = to_int_robust (get "easyChairId") in
   let contest_score = to_int (get "contestScore") in
   let lightning_score = to_int (get "lightningScore") in
   let training_score = to_int (get "trainingScore") in
   let mismatches = to_int (get "mismatches") in
   let num_requests = to_int (get "numRequests") in
   let window_of_json conv json =
-    to_number (member "restsIn" json),
+    to_number (member "resetsIn" json),
     conv (member "amount" json),
     conv (member "limit" json) in
   let request_window =
