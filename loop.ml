@@ -25,8 +25,7 @@ end
 
 open Term 
 
-let secret =  let open Notations in  mk_arg ++ C1 
-				   
+let secret =  let open Notations in  mk_arg ++ C1 				   
 module Test = Sim (struct open Term open Term.Notations let secret = secret  end)   
 
 module FState(X:sig val n : int end) = struct
@@ -35,7 +34,7 @@ module FState(X:sig val n : int end) = struct
   type t = Bitv.t 
 
   let terms = Array.of_list (Generator.generate n (Generator.operators secret))
-  let init = Bitv.create n true
+  let init = Bitv.create (Array.length terms) true
 
   exception NotEquiv
   let equiv p q a = 
@@ -77,7 +76,7 @@ module FState(X:sig val n : int end) = struct
     Bitv.iteri_true (fun i -> Print.(print_exp_nl terms.(i)))
 end
 
-module State=FState(struct let n = 3 end)
+module State=FState (struct let n = 3 end)
 
 let rec loop p = 
   (* Printf.eprintf "size:%i\n" (State.size p); *)
