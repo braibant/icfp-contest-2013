@@ -66,7 +66,22 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 
   (* if we cannot find values that would make progress, we have to make a guess. *)
     
+  let all_equiv p =
+    let n = 100_000 in 
+    let v = Array.init n (fun _ -> rnd64 ()) in 
+    try 
+      iter2 (fun p1 p2 ->
+	for i = 0 to n - 1 do
+	  let x = v.(i) in 
+	  if Term.eval p1 x <> Term.eval p2 x 
+	  then raise Not_found 
+	done      
+      ) p;
+    true
+    with
+    | Not_found -> false
     
+
 	
 				      
   exception NotEquiv
@@ -119,8 +134,14 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
        "possible terms", print_short p]);
     invite ();
     match read_line () with
-    | "e" -> 
+    | "b" ->  				(* best *)
       let keys = best p in 
+      let values = O.eval keys in 
+      let refined,p = refine p keys values in 
+      Printf.printf "refined: %b\n" refined;
+      iloop p (Log.logv log keys values)
+    | "e" -> 				(* random *)
+      let keys = Array.init 256 (fun _ -> rnd64 ()) in 
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
@@ -144,8 +165,12 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     | "p" ->
       Print.print (Log.print log);
       iloop p log 
+    | "c" ->
+      Printf.printf "all_equiv:%b\n" (all_equiv p);
+      iloop p log
     | _ ->
-      iloop p log 
+      iloop p log
+	
 	
          
   let iloop () = 
