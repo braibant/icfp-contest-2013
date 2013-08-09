@@ -80,7 +80,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     let open Print in 
     separate_map hardline (Print.doc_exp) !l
 
-  let size (p:t) = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p; !r
+  let size (p:t) : int = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p; !r
 
   let print_short p =  let open Print in string (string_of_int (size p))
 
@@ -162,6 +162,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
       iloop p log 
     | _ ->
       iloop p log 
+	
          
   let iloop () = 
     let r = iloop init Log.empty in 
@@ -183,7 +184,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 	| Discr (value, answer) -> 
 	  let refined,p = refine1 p value answer in 
 	  if not refined 
-	  then (Printf.eprintf "guess was not refining, size:%i\n" (size p); print p; assert false);
+	  then (Printf.eprintf "guess was not refining, size:%i\n" (size p); 
+		Print.print (print p); assert false);
 	  loop p
       end
     else loop p
