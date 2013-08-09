@@ -23,7 +23,7 @@ let operators t =
   in
   operators t OSet.empty
 
-let generate, generate_tfold =
+let generate, generate_tfold, generate_novar =
   let rec generate size ops atoms =
     match size with
     | 1 -> if OSet.mem Foldo ops then [] else atoms
@@ -49,29 +49,24 @@ let generate, generate_tfold =
 			  acc genr)
 			!acc genl
 		  done;
-		  for i = 4 to size-2 do
-		    let genl = generate i (OSet.remove Foldo ops) atoms in
+		  !acc
+		end
+	      else
+		begin
+		  let acc = ref acc in
+		  for i = 1 to (size-1)/2 do
+		    let genl = generate i ops atoms in
 		    let genr = generate (size-1-i) ops atoms in
 		    acc:=
 		      List.fold_left (fun acc x ->
-			List.fold_left (fun acc y -> Op2 (op,x,y)::acc)
+			List.fold_left (fun acc y -> 
+			  if i = size-1-i && y < x then acc
+			  else Op2 (op,x,y)::acc)
 			  acc genr)
 			!acc genl
 		  done;
 		  !acc
 		end
-	      else
-		let acc = ref acc in
-		for i = 1 to size-2 do
-		  let genl = generate i ops atoms in
-		  let genr = generate (size-1-i) ops atoms in
-		  acc:=
-		    List.fold_left (fun acc x ->
-		      List.fold_left (fun acc y -> Op2 (op,x,y)::acc)
-			acc genr)
-		      !acc genl
-		done;
-		!acc
 	  | If0o ->
 	      if OSet.mem Foldo ops then
 		begin
@@ -162,4 +157,7 @@ let generate, generate_tfold =
       List.filter (fun t -> OSet.equal (operators t) ops)
 	(generate size ops [Var Constants.fold_acc;Var Constants.fold_arg;C0;C1])
     in
-    List.map (fun t -> Fold (Var Constants.arg, C0, t)) lst)
+    List.map (fun t -> Fold (Var Constants.arg, C0, t)) lst),
+  (fun size ops ->
+    List.filter (fun t -> OSet.equal (operators t) ops)
+      (generate size ops [C0;C1]))
