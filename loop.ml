@@ -160,7 +160,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     | "q" -> 
       exit 0
     | "s" -> 
-      Log.save !Options.logfile log;
+      Log.save !Config.logfile log;
       iloop p log 
     | "p" ->
       Print.print (Log.print log);
