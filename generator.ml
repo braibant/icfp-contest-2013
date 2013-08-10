@@ -42,7 +42,7 @@ let rec min_free_var = function
   | If0(a,b,c,_) ->
       begin match min_free_var a with
       | 3 ->
-	  if eval a 0L = 0L then min_free_var a
+	  if Eval.eval a 0L = 0L then min_free_var a
 	  else min_free_var b
       | n -> n
       end
@@ -57,7 +57,7 @@ let rec min_free_var = function
       min (min_free_var a) (min_free_var b)
 
 let rec simpl t =
-  if min_free_var t = 3 then Notations.cst (eval t 0L) t else
+  if min_free_var t = 3 then Notations.cst (Eval.eval t 0L) t else
   match t with
   | If0 (C0, a, b, _) -> simpl a
   | If0 (C1, a, b, _) -> simpl b
@@ -277,4 +277,4 @@ let generate, generate_tfold, generate_novar =
     generate force_fold (size-1) exact ops Notations.([c0;c1]))
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =
-  List.rev_map (fun t -> eval t 0L) (generate_novar ~force_fold ~exact size ops)
+  List.rev_map (fun t -> Eval.eval t 0L) (generate_novar ~force_fold ~exact size ops)

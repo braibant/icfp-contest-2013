@@ -4,9 +4,6 @@ open Int64
 (* the most general evaluation function takes as arguments an
    environment for the bound varibles and a substituion for holes. *)
 
-let eval sigma (env: Vect.t array) t =
-  
-  
 
 let eval =
   let env = Array.create 3 0L in 

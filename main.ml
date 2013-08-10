@@ -1,12 +1,10 @@
-open Net
-open Protocol
-
 (** Offline training, with a randomly-generated term *)
 
 module OfflineOracle(S: sig val secret : Term.exp end)  = struct
   include S
   open Loop
-
+    
+  let eval x = Eval.evalv secret x  
 
   let discriminating n = Array.init n (fun x -> Term.rnd64 ())
 
@@ -40,6 +38,9 @@ let train_offline () =
 
 
 (** Online training, on the server *)
+open Net
+open Protocol
+
 
 module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
   let eval v =
