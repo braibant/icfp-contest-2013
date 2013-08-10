@@ -1,7 +1,5 @@
 open Term
 
-type op = If0o | Foldo | Op1o of op1 | Op2o of op2
-
 module OSet : Set.S with type elt = op
 
 val ops_from_list : op list -> OSet.t

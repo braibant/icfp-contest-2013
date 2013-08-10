@@ -1,11 +1,5 @@
 open Term
 
-type op =
-| If0o
-| Foldo
-| Op1o of op1
-| Op2o of op2
-
 module OSet = Set.Make(struct type t=op let compare=compare end)
 
 let ops_from_list =

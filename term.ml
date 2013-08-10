@@ -162,3 +162,45 @@ let subst_holes sigma t =
     | Op2 (o , e, f, _) -> Notations.op2 o (aux e) (aux f)
     | Cst (_, _, _) as e -> e
   in aux t
+
+(** Reified representation of operators *)
+type op =
+| If0o
+| Foldo
+| Op1o of op1
+| Op2o of op2
+
+let op_of_string = function
+  | "not" -> Op1o Not
+  | "shl1" -> Op1o Shl1
+  | "shr1" -> Op1o Shr1
+  | "shr4" -> Op1o Shr4
+  | "shr16" -> Op1o Shr16
+  | "and" -> Op2o And
+  | "or" -> Op2o Or
+  | "xor" -> Op2o Xor
+  | "plus" -> Op2o Plus
+  | "if0" -> If0o
+  | "fold" -> Foldo
+  | "tfold" ->
+    (* no tfold support yet *)
+    Foldo 
+  | op -> failwith (Printf.sprintf "Parser.parse_op: unknown operator %S" op)
+
+let string_of_op1 = function
+  | Not -> "not"
+  | Shl1 -> "shl1"
+  | Shr1 -> "shr1"
+  | Shr4 -> "shr4"
+  | Shr16 -> "shr16"
+let string_of_op2 = function
+  | And -> "and"
+  | Or -> "or"
+  | Xor -> "xor"
+  | Plus -> "plus"
+
+let string_of_op = function
+  | If0o -> "if0"
+  | Foldo -> "fold"
+  | Op1o op -> string_of_op1 op
+  | Op2o op -> string_of_op2 op

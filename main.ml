@@ -95,6 +95,33 @@ let train_online () =
   | #Net.unexpected as other ->
     invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
 
+(* real world play *)
+
+let play_online problem =
+  let open Protocol.Problem.Response in
+  let module Oracle = OnlineOracle(struct
+    let id = problem.id
+    let secret = None
+  end) in
+  let module Params = struct
+    let n = problem.size
+    let ops =
+      Generator.ops_from_list
+        (List.map Term.op_of_string problem.operators)
+  end in
+  let module Loop = Loop.FState(Params)(Oracle) in
+  if !Config.interactive_mode 
+  then Loop.iloop ()
+  else Loop.loop ()
+
+let problems = lazy begin
+  let json = Yojson.Basic.from_file "problems" in
+  Yojson.Basic.Util.convert_each Protocol_json.problem_of_json json
+end
+
+let problem_of_id id =
+  let open Protocol.Problem.Response in
+  List.find (fun prob -> prob.id = id) (Lazy.force problems)
 
 (** Setting up usage *)
 

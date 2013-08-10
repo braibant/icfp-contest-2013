@@ -7,18 +7,6 @@ let string_of_id s =
   | 2 -> "y"
   | _ -> assert false
 
-let string_of_op1 = function
-  | Not -> "not"
-  | Shl1 -> "shl1"
-  | Shr1 -> "shr1"
-  | Shr4 -> "shr4"
-  | Shr16 -> "shr16"
-let string_of_op2 = function
-  | And -> "and"
-  | Or -> "or"
-  | Xor -> "xor"
-  | Plus -> "plus"
-
 type sexp =
 | Word of string
 | List of sexp list

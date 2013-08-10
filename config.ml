@@ -23,7 +23,7 @@ let args =
     " play offline with a randomly-generated term";
     "--train-online", Unit (set_source Train_online),
     " use the online training mode";
-    "--log", Set_string logfile, " PATH set log file";
+    "--log", Set_string logfile, "PATH set log file";
     "-o", Set_string logfile, " (idem)";
     "--interactive", Set interactive_mode, " interactive mode" ;
     "-i", Set interactive_mode, " (idem)" ;
