@@ -123,7 +123,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 
   let invite () =
     print_newline ();
-    print_string "(b)est r(e)ndom (g)uess (c)heck_all_equiv";
+    print_string "s(a)t (b)est r(e)ndom (g)uess (c)heck_all_equiv";
     print_newline ();
     print_string "$ "
 
@@ -141,6 +141,38 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
       iloop p (Xlog.logv log keys values)
     | "e" -> 				(* random *)
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
+      let values = O.eval keys in 
+      let refined,p = refine p keys values in 
+      Printf.printf "refined: %b\n" refined;
+      iloop p (Xlog.logv log keys values)
+    | "a" -> 				(* with sat *)
+      let keys = ref [] in
+      for j = 0 to 4 do
+	let get_nth k =
+	  let cur = ref 0 in
+	  try 
+	    Bitv.iteri_true (fun i -> if !cur = k then raise (Found i) else incr cur) p;
+	    assert false
+	  with Found i -> terms.(i)
+	in
+	let pairs = ref [] in
+	let n = size p in
+	for i = 0 to 6 do (* Increase 6 to whatever if there are many cores *)
+	  pairs := (get_nth (Random.int n), get_nth (Random.int n)) :: !pairs
+	done;
+	keys := List.append (Sat.discriminate !pairs) !keys
+      done;
+      let keys = List.sort compare !keys in
+      let rec uniq = function
+	| [] -> []
+	| None::q -> uniq q
+	| t::t'::q when t=t' -> uniq (t'::q)
+	| Some t::q -> t::uniq q
+      in
+      let keys = uniq keys in
+      let keys = Array.init 256 (fun i ->
+	if i < List.length keys then List.nth keys i else rnd64 ())
+      in
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
