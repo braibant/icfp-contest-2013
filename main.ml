@@ -206,6 +206,8 @@ let show_status () =
       invalid_arg (Printf.sprintf "status: %s" (Net.str_of_return other))
 
 let solve_easy_problems max_size =
+  if not !Config.sync_problem_list then sync_problem_list ();
+
   let problems = unsolved_problems_sorted () in
 
   (* we only attack problems without fold *)
