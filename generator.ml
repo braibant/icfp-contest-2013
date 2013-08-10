@@ -43,6 +43,8 @@ let rec min_free_var = function
   | Fold (a, b, c, _) ->
       if min_free_var a = 3 && min_free_var b = 3 && min_free_var c >= 1 then
 	3
+      else if min_free_var c = 3 then
+	3
       else
 	0
   | Op1 (_, a, _) ->
@@ -158,8 +160,8 @@ let generate, generate_tfold, generate_novar,generate_context =
 		    begin
 		      let acc = ref acc in
 		      for i = 1 to (size-1)/2 do
-			let genl = aux i Forbidden in
-			let genr = aux (size-1-i) Forbidden in
+			let genl = aux i fold_state in
+			let genr = aux (size-1-i) fold_state in
 			acc:=
 			  List.fold_left (fun acc x ->
 			    List.fold_left (fun acc y ->
@@ -219,9 +221,9 @@ let generate, generate_tfold, generate_novar,generate_context =
 		    let acc = ref acc in
 		    for i = 1 to size-3 do
 		      for j = 1 to size-2-i do
-			let gen1 = aux i Forbidden in
-			let gen2 = aux j Forbidden in
-			let gen3 = aux (size-1-i-j) Forbidden in
+			let gen1 = aux i fold_state in
+			let gen2 = aux j fold_state in
+			let gen3 = aux (size-1-i-j) fold_state in
 			acc:=
 			  List.fold_left (fun acc x ->
 			    List.fold_left (fun acc y ->
