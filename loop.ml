@@ -24,7 +24,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     else
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
       let values = O.eval keys in 
-      let v = Array.of_list (Synthesis.main 8 8 (n - 7) ops keys values) in 
+      let v = Array.of_list (Synthesis.main 8 (n - 6) ops keys values) in 
       Printf.printf "synthesis generated %i terms\n" (Array.length v);
       v
   end

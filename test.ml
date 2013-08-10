@@ -21,4 +21,4 @@ let main sizeC sizeT sizeE  =
  
 
   
-let _ = main 6 6 0
+let _ = main 3 8  0
