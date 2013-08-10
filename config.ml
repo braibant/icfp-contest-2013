@@ -4,6 +4,8 @@ let logfile = ref "logfile"
 let interactive_mode = ref false 
 let problem_size = ref 4
 
+let solved_file = ref "solved_problems"
+
 type source =
 | Train_offline
 | Train_online
