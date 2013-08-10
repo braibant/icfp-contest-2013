@@ -2,6 +2,7 @@ type exp = private
   C0
 | C1
 | Var of ident
+| Hole of ident * bool 			(* bool = true -> 3 free variables *)
 | If0 of exp * exp * exp * tag
 | Fold of exp * exp * exp * tag
 | Op1 of op1 * exp * tag

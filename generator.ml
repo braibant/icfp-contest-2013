@@ -20,7 +20,7 @@ let all_ops =
 let operators t =
   let rec operators t acc =
     match t with
-    | C0 | C1 | Var _ -> acc
+    | C0 | C1 | Var _ | Hole (_,_) -> acc 
     | If0(a,b,c,_) ->
 	operators a (operators b (operators c (OSet.add If0o acc)))
     | Fold(a,b,c,_) ->
@@ -37,6 +37,7 @@ let rec min_free_var = function
   | C0 -> 3
   | C1 -> 3
   | Cst (_, _, _) -> 3
+  | Hole (_,b) -> if b then 0 else 1 
   | Var x -> x
   | If0(a,b,c,_) ->
       begin match min_free_var a with
