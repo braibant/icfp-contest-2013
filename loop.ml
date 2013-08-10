@@ -175,7 +175,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     Printf.printf "result\n";
     Print.(print_exp_nl r);
     Printf.printf "secret\n";
-    Print.(print_exp_nl (O.reveal ()))
+    Print.(print_exp_nl (O.reveal ()));
+    print_newline ()
 
 
   let rec loop round p = 
@@ -200,7 +201,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   let loop () = 
     let r =  (loop 0 init) in 
     Printf.printf "result\n";
-    Print.(print_exp r)
+    Print.(print_exp r);
+    print_newline ()
 
 end
 

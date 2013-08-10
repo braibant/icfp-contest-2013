@@ -53,14 +53,16 @@ let random size =
   let fueled_gen = 
     fix (fun term env ->
       fuel_choose [
-        nullary choose_const;
-        nullary (choose_var env);
+        (* explicit ticks because the constants must have size 1 instead of 0 *)
+        tick (nullary choose_const);
+        tick (nullary (choose_var env));
         unary (term env) (fun e -> choose_op1 $$ e);
         binary (term env) (term env) (fun e1 e2 -> choose_op2 $$ e1 $$ e2);
       ]
     ) in
   
   let rand = Random.get_state () in
-  match fueled_gen `Top rand size with
+  (* why size-1? In practice fuel and Term.size differ by 1...*)
+  match fueled_gen `Top rand (size - 1) with
     | None -> failwith "Example.random"
     | Some term -> term rand

@@ -27,7 +27,7 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
 end
 
 let train_offline () =
-  let secret = Example.gen !Config.problem_size in
+  let secret = Example.random !Config.problem_size in
   Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
   let module Oracle = OfflineOracle(struct let secret = secret end) in
   let module Params = struct
