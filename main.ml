@@ -182,6 +182,16 @@ let list_problems () =
   List.iter print_problem easy;
   print_newline ()
 
+
+let show_status () =
+  match Net.send_status_raw () with
+    | `Status_json json ->
+      Yojson.Basic.pretty_to_channel stdout json;
+      print_newline ();
+      ()
+    | #Net.unexpected as other ->
+      invalid_arg (Printf.sprintf "status: %s" (Net.str_of_return other))
+
 (** Setting up usage *)
 
 let _ =
@@ -189,6 +199,11 @@ let _ =
      please don't use observable global effect outside it *)
   if not !Sys.interactive then begin
     Arg.parse Config.args (fun rest -> ()) "ICFP contest 2013 prototype";
+
+    if !Config.show_status then begin
+      show_status ();
+      exit 0;
+    end;
 
     if !Config.sync_problem_list then sync_problem_list ();
     begin match !Config.show_problem with

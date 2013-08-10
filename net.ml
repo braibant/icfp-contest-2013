@@ -126,3 +126,8 @@ let send_status () =
     | #unexpected as ret -> ret
     | `Body json -> `Status_body (Protocol_json.status_of_json json)
 
+let send_status_raw () =
+  let name = name `Status in
+  match handle name "" with
+    | #unexpected as ret -> ret
+    | `Body json -> `Status_json json
