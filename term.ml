@@ -2,6 +2,7 @@ type exp =
   C0
 | C1
 | Var of ident
+| Hole of ident * bool 
 | If0 of exp * exp * exp * tag
 | Fold of exp * exp * exp * tag
 | Op1 of op1 * exp * tag
@@ -15,7 +16,8 @@ and ident = int
 let get_exp_id = function
   | C0 -> -1
   | C1 -> -2
-  | Var x -> -x-3
+  | Var x -> (-x -3)*2+1
+  | Hole (x,_) -> (-x-3)*2 
   | If0 (_, _, _, x) -> x
   | Fold (_, _, _, x) -> x
   | Op1 (_, _, x) -> x
@@ -30,6 +32,8 @@ module HC = Hashcons.Make(struct
     | C0, C0 -> true
     | C1, C1 -> true
     | Var id1, Var id2 -> id1 = id2
+    | Hole (id1,_), Hole (id2,_) -> id1 = id2
+
     | If0 (a1, b1, c1, _), If0 (a2, b2, c2, _) ->
 	a1 == a2 && b1 == b2 && c1 == c2
     | Fold (a1, b1, c1, _), Fold (a2, b2, c2, _) ->
@@ -44,9 +48,10 @@ module HC = Hashcons.Make(struct
 
   let hash x =
     match x with
-    | C0 -> 3
-    | C1 -> 5
-    | Var x -> x+13
+    | C0 -> 13
+    | C1 -> 17
+    | Var x -> x
+    | Hole (x,_) -> x+5   
     | If0 (a, b, c, _) ->
 	Hashcons.combine_list get_exp_id 31 [a;b;c]
     | Fold (a, b, c, _) ->
@@ -67,6 +72,7 @@ module HC = Hashcons.Make(struct
     | C0 -> C0
     | C1 -> C1
     | Var x -> Var x
+    | Hole (x,y) -> Hole (x,y)
     | If0 (a, b, c, _) -> If0 (a, b, c, n)
     | Fold (a, b, c, _) -> Fold (a, b, c, n)
     | Op1 (a, b, _) -> Op1 (a, b, n)
@@ -83,7 +89,7 @@ end)
 
 let size x =
   let rec aux = function
-    | C0 | C1 | Var _ -> 1
+    | C0 | C1 | Var _ | Hole _ -> 1
     | If0 (e,f,g,_) -> 1 + aux e + aux f + aux g
     | Fold (e,f,g, _) -> 2 + aux e + aux f + aux g
     | Op1 (_, e, _) -> 1 + aux e
@@ -103,50 +109,6 @@ let rnd64 () =
   if Random.bool ()
   then Random.int64 Int64.max_int
   else Int64.neg (Random.int64 Int64.max_int)
-
-let eval =
-  let env = Array.create 3 0L in 
-  let rec eval = function
-    | C0 -> 0L
-    | C1 -> 1L
-    | Var id -> env.(id)
-    | If0 (e1,e2,e3,_) -> if eval  e1 = 0L then eval  e2 else eval  e3
-    | Op1 (op,e,_) -> let e = eval  e in 
-      begin match op with 
-      | Not -> lognot e
-      | Shl1 -> shift_left e 1
-      | Shr1 -> shift_right_logical e 1
-      | Shr4 -> shift_right_logical e 4
-      | Shr16 -> shift_right_logical e 16
-      end
-    | Op2 (op,e,f,_) -> let e = eval  e in
-      let f = eval  f in 
-      begin match op with
-      | And -> logand e f
-      | Or -> logor e f
-      | Xor -> logxor e f
-      | Plus -> add e f
-      end
-    | Fold (e0,e1,e2,_) -> 
-      let e0 = ref (eval  e0) in 
-      let acc =  ref (eval e1) in
-      for i = 0 to 7 do
-      (* set the arguments for the fold *)
-	let byte = logand !e0 0xFFL in 
-	env.(Constants.fold_arg) <- byte;
-	env.(Constants.fold_acc) <- !acc;
-      (* compute the new value of acc *)
-	acc := eval e2;
-      (* shift e0 *)
-	e0 := shift_right_logical !e0 2;
-      done;
-      !acc
-    | Cst (a, _, _) -> a
-  in
-  fun p x -> env.(Constants.arg) <- x; eval p
-;;
-
-let evalv p v = Array.map (eval p) v
 
 module Notations = struct
     
@@ -175,6 +137,3 @@ module Notations = struct
   let if0 c a b = HC.hashcons (If0 (c, a, b, -1))
   let fold c a b = HC.hashcons (Fold (c, a, b, -1))
 end 
-
-let p = let open Notations in fold mk_arg c0 (mk_farg || mk_facc)
-(* let _ = Printf.printf "%Ld\n" (eval p (0x1122334455667788L)) *)

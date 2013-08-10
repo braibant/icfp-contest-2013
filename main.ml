@@ -1,13 +1,10 @@
-open Net
-open Protocol
-
 (** Offline training, with a randomly-generated term *)
 
 module OfflineOracle(S: sig val secret : Term.exp end)  = struct
   include S
   open Loop
-
-  let eval v = Term.evalv secret v
+    
+  let eval x = Eval.evalv secret x  
 
   let discriminating n = Array.init n (fun x -> Term.rnd64 ())
 
@@ -18,12 +15,12 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
       if i = confidence - 1 then Equiv
       else
 	let x = tests.(i) in
-	if Term.eval p' x = Term.eval secret x
+	if Eval.eval p' x = Eval.eval secret x
 	then aux (succ i)
-	else Discr (x,Term.eval secret x)
+	else Discr (x,Eval.eval secret x)
     in aux 0
 
-  let reveal () = secret
+  let reveal () = Some secret
 end
 
 let train_offline () =
@@ -41,34 +38,37 @@ let train_offline () =
 
 
 (** Online training, on the server *)
-
 module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
   let eval v =
-    let open Eval in 
-    match send_eval (Request.({name = `Id X.id; arguments = v})) with 
+    let open Protocol.Eval in 
+    match Net.send_eval (Request.({name = `Id X.id; arguments = v})) with 
     | `Eval_body (`Ok r) -> r
-    | _ -> invalid_arg "eval"
+    | `Eval_body (`Error error) ->
+      invalid_arg (Printf.sprintf "eval error: %s" error)
+    | #Net.unexpected as other ->
+      invalid_arg (Printf.sprintf "eval: %s" (Net.str_of_return other))
 
   let guess t =
     let program =  Print.print_program t in 
-    let open Guess in 
-      match send_guess (Request.({id = X.id; program})) with 
+    let open Protocol.Guess in 
+      match Net.send_guess (Request.({id = X.id; program})) with 
       | `Guess_body {Response.status=`Win} -> Loop.Equiv 
       | `Guess_body {Response.status=`Mismatch m} -> Loop.Discr (m.Response.input, m.Response.challenge_result )
       | `Guess_body {Response.status=`Error msg} ->
 	failwith (Printf.sprintf "guess: received error message from server\nmsg: %s\nprogram:%s\n" msg program)
-      | _ -> invalid_arg "guess"
+      | #Net.unexpected as other ->
+        invalid_arg (Printf.sprintf "guess: %s" (Net.str_of_return other))
 
-  let reveal () = X.secret
+  let reveal () = Some X.secret
 end
 
 (* this is the main handler for training problems. I tested it in
    interactive mode, but not yet in automated mode [loop] *)
 let train_online () =
-  let open Training in 
-  match send_training ({
-    Protocol.Training.Request.size = Some !Config.problem_size;
-    Protocol.Training.Request.operators = Some []
+  let open Protocol.Training in 
+  match Net.send_training ({
+    Request.size = Some !Config.problem_size;
+    Request.operators = Some []
   })
   with
   | `Training_body pb ->
@@ -87,10 +87,8 @@ let train_online () =
     if !Config.interactive_mode 
     then Loop.iloop ()
     else Loop.loop ()
-  | _ -> assert false 
-
-
-
+  | #Net.unexpected as other ->
+    invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
 
 (** Setting up usage *)
 
