@@ -20,7 +20,7 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
 	else Discr (x,Eval.eval secret x)
     in aux 0
 
-  let reveal () = secret
+  let reveal () = Some secret
 end
 
 let train_offline () =
@@ -55,7 +55,7 @@ module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
 	failwith (Printf.sprintf "guess: received error message from server\nmsg: %s\nprogram:%s\n" msg program)
       | _ -> invalid_arg "guess"
 
-  let reveal () = X.secret
+  let reveal () = Some X.secret
 end
 
 (* this is the main handler for training problems. I tested it in
@@ -84,8 +84,6 @@ let train_online () =
     then Loop.iloop ()
     else Loop.loop ()
   | _ -> assert false 
-
-
 
 
 (** Setting up usage *)

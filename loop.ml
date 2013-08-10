@@ -6,7 +6,7 @@ type guess_result = Discr of int64 * int64 | Equiv
 module type ORACLE = sig
   val eval : int64 array -> int64 array
   val guess : Term.exp -> guess_result
-  val reveal : unit  -> Term.exp 
+  val reveal : unit  -> Term.exp option
 end
 
 (* Client *)
@@ -177,10 +177,13 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     let r = iloop init Xlog.empty in 
     Printf.printf "result\n";
     Print.(print_exp_nl r);
-    Printf.printf "secret\n";
-    Print.(print_exp_nl (O.reveal ()));
-    print_newline ()
-
+    match O.reveal () with
+      | None -> ()
+      | Some secret ->
+        Printf.printf "secret\n";
+        Print.(print_exp_nl secret);
+        print_newline ();
+        ()
 
   let rec loop round p = 
     let keys = if round < 5 then  Array.init 256 (fun _ -> rnd64 ()) else best p in 
