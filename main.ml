@@ -139,13 +139,16 @@ let sync_problem_list () =
         Printf.eprintf "sync_problem_list sys error: %s.\n%!"
           (Printexc.to_string exn)
 
+let print_problem problem =
+  Yojson.Basic.pretty_to_channel stdout
+    problem.Protocol.Problem.Response.json;
+  print_newline ()
+
 let show_problem id =
   Printf.printf "Showing problem %s.\n%!" id;
   try
     let problem = problem_of_id id in
-    Yojson.Basic.pretty_to_channel stdout
-      problem.Protocol.Problem.Response.json;
-    print_newline ()
+    print_problem problem
   with Not_found ->
     Printf.eprintf "No problem with id %s.\n%!" id
 
@@ -170,16 +173,31 @@ let _ =
     print_newline ();
 
     match !Config.source with
-      | None ->
-        Print.print PPrint.(flow (break 1) (words
-          "no source of challenge has been selected; \
-           you must pass either --train-offline, --train-online \
-           or, when it will be supported, the --real-stuff."));
-        print_newline ();
-      | Some Config.Real_stuff ->
-        print_endline "This mode is not yet supported."
+      | None -> ()
       | Some Config.Train_offline ->
         train_offline ()
       | Some Config.Train_online ->
         train_online ()
+      | Some (Config.Single_problem id) ->
+        begin match
+          (try Some (problem_of_id id) with Not_found -> None)
+        with
+          | None ->
+            Printf.eprintf
+              "The local problem list knows of no problem of id %s. \
+               Aborting for your own good.\n%!" id
+          | Some prob ->
+            Printf.printf
+              "You want to play in %s mode against the following problem:\n"
+              (if !Config.interactive_mode
+               then "interactive" else "non-interactive");
+            print_problem prob;
+            print_endline "Confirm? y/n";
+            begin match read_line () with
+              | "y" -> play_online prob
+              | "n" -> ()
+              | other ->
+                Printf.printf "unknown answer %S, aborting.\n%!" other
+            end
+        end
   end
