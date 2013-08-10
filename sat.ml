@@ -171,7 +171,10 @@ let rec encode_formula state env t =
 	  begin
 	    add_clause state [-a.(i); -b.(i); carry.(i+1)];
 	    add_clause state [-a.(i); -carry.(i); carry.(i+1)];
-	    add_clause state [-b.(i); -carry.(i); carry.(i+1)]
+	    add_clause state [-b.(i); -carry.(i); carry.(i+1)];
+	    add_clause state [a.(i); b.(i); -carry.(i+1)];
+	    add_clause state [a.(i); carry.(i); -carry.(i+1)];
+	    add_clause state [b.(i); carry.(i); -carry.(i+1)];
 	  end;
 	add_clause state [-a.(i); -b.(i); -carry.(i); res.(i)];
 	add_clause state [-a.(i); -b.(i); carry.(i); -res.(i)];
