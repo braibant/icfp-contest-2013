@@ -223,7 +223,11 @@ let solve_easy_problems max_size =
       Printf.printf "Problem size too big, stopping\n%!";
       exit 0
     end;
-    play_online data None
+    play_online data None;
+    print_endline "I'm doing a 5 second pause before the next problem;
+                   Interrupt me now (C-c) if you want to stop.";
+    Unix.sleep 5;
+    print_endline "Pause ended.";
   in
 
   List.iter attack problems
