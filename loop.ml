@@ -160,10 +160,10 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       iloop p (Xlog.logv log keys values)
     | "a" -> 				(* with sat *)
       let keys = ref [] in
-      for j = 0 to 4 do
+      for j = 0 to 10 do
 	let get_nth k =
 	  let cur = ref 0 in
-	  try 
+	  try
 	    Bitv.iteri_true (fun i -> if !cur = k then raise (Found i) else incr cur) p;
 	    assert false
 	  with Found i -> terms.(i)
@@ -173,7 +173,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 	for i = 0 to 6 do (* Increase 6 to whatever if there are many cores *)
 	  pairs := (get_nth (Random.int n), get_nth (Random.int n)) :: !pairs
 	done;
-	keys := List.append (Sat.discriminate !pairs) !keys
+	keys := (Sat.discriminate !pairs) @ !keys
       done;
       let keys = List.sort compare !keys in
       let rec uniq = function
@@ -183,6 +183,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 	| Some t::q -> t::uniq q
       in
       let keys = uniq keys in
+      Printf.printf "Found %d new discriminants by SAT\n" (List.length keys);
       let keys = Array.init 256 (fun i ->
 	if i < List.length keys then List.nth keys i else rnd64 ())
       in

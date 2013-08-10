@@ -135,8 +135,8 @@ let rec encode_formula state env t =
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [-a.(i);-b.(i);res.(i)];
-	add_clause state [-a.(i);-res.(i)];
-	add_clause state [-b.(i);-res.(i)];
+	add_clause state [a.(i);-res.(i)];
+	add_clause state [b.(i);-res.(i)];
       done;
       res
   | Op2(Or, a, b, _) ->
@@ -145,8 +145,8 @@ let rec encode_formula state env t =
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [a.(i);b.(i);-res.(i)];
-	add_clause state [a.(i);res.(i)];
-	add_clause state [b.(i);res.(i)];
+	add_clause state [-a.(i);res.(i)];
+	add_clause state [-b.(i);res.(i)];
       done;
       res
   | Op2(Xor, a, b, _) ->
@@ -203,17 +203,18 @@ let discriminate l =
 	add_clause state [-enc1.(i); -enc2.(i); -diff.(i)]
       done;
       add_clause state (Array.to_list diff);
-      (state, env.(0)))
+      (state, env.(0), t1, t2))
       l
   in
-  let res = run_minisat (List.map fst pbs) in
-  List.map2 (fun (_, env) res ->
+  let res = run_minisat (List.map (fun (x, _, _, _) -> x) pbs) in
+  List.map2 (fun (_, env, t1, t2) res ->
     match res with
     | Sat data ->
 	let res = ref 0L in
 	for i = 0 to 63 do
 	  if data.(env.(i)) then res := Int64.logor !res (Int64.shift_left 1L i)
 	done;
+	assert(Eval.eval t1 !res <> Eval.eval t2 !res);
 	Some !res
     | _ -> None)
     pbs res
