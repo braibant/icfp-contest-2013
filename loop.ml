@@ -17,6 +17,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   type t = Bitv.t 
 
   let terms = Array.of_list (Generator.generate ~force_fold:false n ops)
+  (* let _ = *)
+  (*   let (a, b, c, d, e, f) = Term.HC.stats () in *)
+  (*   Printf.printf "%d %d %d %d %d %d\n" a b c d e f *)
   let init = Bitv.create (Array.length terms) true
 
   let print (p:t)=
