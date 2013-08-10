@@ -24,7 +24,8 @@ let json_body name call =
 let unknown_code name n =
   failwith (Printf.sprintf "call %S: unknown status code %d" name n)
 
-let handle name call =
+let handle name body =
+  let call = new post_raw (addr name) body in
   match (response call) # response_status_code with
     | 400 -> `Bad_request
     | 401 -> `Unauthorized
@@ -63,8 +64,7 @@ let str_of_return = function
 
 let send_myproblems () =
   let name = name `Problem in
-  let call = new post_raw (addr name) "" in
-  match handle name call with
+  match handle name "" with
     | #unexpected as ret -> ret
     | `Body json ->
       let problems =
@@ -74,8 +74,7 @@ let send_myproblems () =
 let send_eval request =
   let name = name `Eval in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_eval request) in
-  let call = new post_raw (addr name) body in
-  match handle name call with
+  match handle name body with
     | #unexpected as ret -> ret
     | `Body json -> `Eval_body (Protocol_json.eval_of_json json)
 
@@ -89,23 +88,20 @@ exception Request_too_big
 let send_guess request =
   let name = name `Guess in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_guess request) in
-  let call = new post_raw (addr name) body in
-  match handle name call with
+  match handle name body with
     | #unexpected as ret -> ret
     | `Body json -> `Guess_body (Protocol_json.guess_of_json json)
 
 let send_training request =
   let name = name `Training in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_training request) in
-  let call = new post_raw (addr name) body in
-  match handle name call with
+  match handle name body with
     | #unexpected as ret -> ret
     | `Body json -> `Training_body (Protocol_json.training_of_json json)
 
 let send_status () =
   let name = name `Status in
-  let call = new post_raw (addr name) "" in
-  match handle name call with
+  match handle name "" with
     | #unexpected as ret -> ret
     | `Body json -> `Status_body (Protocol_json.status_of_json json)
 
