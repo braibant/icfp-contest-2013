@@ -1,11 +1,5 @@
 open Term
 
-type op =
-| If0o
-| Foldo
-| Op1o of op1
-| Op2o of op2
-
 module OSet = Set.Make(struct type t=op let compare=compare end)
 
 let ops_from_list =
@@ -98,7 +92,7 @@ type fold_state =
   | Inside
   | Forbidden
 
-let generate, generate_tfold, generate_novar =
+let generate, generate_tfold, generate_novar,generate_context =
   let generate force_fold size exact ops atoms =
     let has_fold = OSet.mem Foldo ops in
     let ops = OSet.remove Foldo ops in
@@ -274,7 +268,16 @@ let generate, generate_tfold, generate_novar =
     in
     List.rev_map (fun t -> Notations.(fold mk_arg c0 t)) lst),
   (fun ?(force_fold=true) size ?(exact=true) ops ->
-    generate force_fold (size-1) exact ops Notations.([c0;c1]))
+    generate force_fold (size-1) exact ops Notations.([c0;c1])),
+  (fun size ops holes -> 
+    generate false size false ops (Notations.([c0;c1;mk_arg]))
+  )
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =
   List.rev_map (fun t -> Eval.eval t 0L) (generate_novar ~force_fold ~exact size ops)
+
+let generate_constants_witness size ops =
+  List.rev_map (fun t -> t, Eval.eval t 0L) (generate_novar ~force_fold:false 
+					       ~exact:false size ops)
+
+  

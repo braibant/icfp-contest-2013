@@ -150,8 +150,10 @@ end
 module Training = struct
   module Request = struct
     type request = {
-      size: int option; (* the size of the problem requested, in the range [3,30] *)
-      operators: string list option; (* either [], ["tfold"] or ["fold"] *)
+      size: int option; 
+      (* the size of the problem requested, in the range [3,30] *)
+      operators: string list option;
+      (* either [], ["tfold"] or ["fold"] *)
     }
   end
 
@@ -160,11 +162,11 @@ module Training = struct
       challenge: string; (* some \BV program P *)
       id: string; (* a traning problem ID associated with P *)
       size: int; (* |P| (equal to the request size if present) *)
-      operators: string list; (* (Operators P operators) is valid,
-                                 and if the request operators is []
-                                 then "fold" and "tfold" do not occur in `operators`;
-                                 if the request operators was defined,
-                                 it is included in `operators` *)
+      operators: string list;
+      (* (Operators P operators) is valid, and if the request
+         operators is [] then "fold" and "tfold" do not occur in
+         `operators`; if the request operators was defined, it is
+         included in `operators` *)
     }
   end
 

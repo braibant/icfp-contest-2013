@@ -97,6 +97,18 @@ let size x =
     | Cst (_, _, _) -> assert false
   in aux x + 1
 
+let holes x =
+  let (+) = max in 
+  let rec aux = function
+    | C0 | C1 | Var _ -> min_int 
+    | Hole (n,_) -> n
+    | If0 (e,f,g,_) -> aux e + aux f + aux g
+    | Fold (e,f,g, _) -> aux e + aux f + aux g
+    | Op1 (_, e, _) -> aux e
+    | Op2 (_, e, f, _) -> aux e + aux f
+    | Cst (_, _, _) -> min_int
+  in aux x
+
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 
   let arg = 0
@@ -136,4 +148,59 @@ module Notations = struct
 
   let if0 c a b = HC.hashcons (If0 (c, a, b, -1))
   let fold c a b = HC.hashcons (Fold (c, a, b, -1))
+
+  let hole n b = HC.hashcons (Hole (n,b))
 end 
+
+let subst_holes sigma t =
+  let rec aux = function
+    | C0 | C1 | Var _ as e-> e
+    | Hole (n,_) -> sigma.(n)
+    | If0 (c,f,g,_) -> Notations.if0 (aux c) (aux f) (aux g)
+    | Fold (c,f,g, _) -> Notations.fold (aux c) (aux f) (aux g)
+    | Op1 (o , e, _) -> Notations.op1 o (aux e)
+    | Op2 (o , e, f, _) -> Notations.op2 o (aux e) (aux f)
+    | Cst (_, _, _) as e -> e
+  in aux t
+
+(** Reified representation of operators *)
+type op =
+| If0o
+| Foldo
+| Op1o of op1
+| Op2o of op2
+
+let op_of_string = function
+  | "not" -> Op1o Not
+  | "shl1" -> Op1o Shl1
+  | "shr1" -> Op1o Shr1
+  | "shr4" -> Op1o Shr4
+  | "shr16" -> Op1o Shr16
+  | "and" -> Op2o And
+  | "or" -> Op2o Or
+  | "xor" -> Op2o Xor
+  | "plus" -> Op2o Plus
+  | "if0" -> If0o
+  | "fold" -> Foldo
+  | "tfold" ->
+    (* no tfold support yet *)
+    Foldo 
+  | op -> failwith (Printf.sprintf "Parser.parse_op: unknown operator %S" op)
+
+let string_of_op1 = function
+  | Not -> "not"
+  | Shl1 -> "shl1"
+  | Shr1 -> "shr1"
+  | Shr4 -> "shr4"
+  | Shr16 -> "shr16"
+let string_of_op2 = function
+  | And -> "and"
+  | Or -> "or"
+  | Xor -> "xor"
+  | Plus -> "plus"
+
+let string_of_op = function
+  | If0o -> "if0"
+  | Foldo -> "fold"
+  | Op1o op -> string_of_op1 op
+  | Op2o op -> string_of_op2 op

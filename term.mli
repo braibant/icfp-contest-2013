@@ -21,6 +21,10 @@ module H : Hashtbl.S with type key = exp
 
 val size : exp -> int
 
+val holes : exp -> int
+
+val subst_holes : exp array -> exp  -> exp
+
 module Constants :
     sig
       val arg : int
@@ -53,4 +57,17 @@ module Notations :
       val fold : exp -> exp -> exp -> exp
       val op1 : op1 -> exp -> exp
       val op2 : op2 -> exp -> exp -> exp
+      val hole : ident -> bool -> exp
     end
+
+type op =
+| If0o
+| Foldo
+| Op1o of op1
+| Op2o of op2
+
+val op_of_string : string -> op
+
+val string_of_op1 : op1 -> string
+val string_of_op2 : op2 -> string
+val string_of_op : op -> string
