@@ -34,7 +34,33 @@ let gen =
 
 let examples = Array.init 50 (fun _ -> gen 10)
 
-(* let _ = *)
-(*   if not !Sys.interactive then *)
-(*     Array.iter (fun x -> Print.(print (doc_exp x ^/^ hardline))) examples *)
+(** Currently the generator is quite naive:
+    it generates neither If0 nor Fold *)
+let random size =
+  let open Randgen in
+  let ($$) f x = app f x in
+  
+  let choose_const = select [c0; c1] in
+    
+  let choose_var = function
+    | `Top -> return mk_arg
+    | `Fold -> select [mk_arg; mk_facc; mk_farg] in
 
+  let choose_op1 = select [(~~); shl1; shr1; shr4; shr16] in
+  let choose_op2 = select [(&&); (||); ( ** ); (++)] in
+
+  let open Fuel in
+  let fueled_gen = 
+    fix (fun term env ->
+      fuel_choose [
+        nullary choose_const;
+        nullary (choose_var env);
+        unary (term env) (fun e -> choose_op1 $$ e);
+        binary (term env) (term env) (fun e1 e2 -> choose_op2 $$ e1 $$ e2);
+      ]
+    ) in
+  
+  let rand = Random.get_state () in
+  match fueled_gen `Top rand size with
+    | None -> failwith "Example.random"
+    | Some term -> term rand
