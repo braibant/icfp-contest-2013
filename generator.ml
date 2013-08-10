@@ -29,14 +29,14 @@ let operators t =
 	operators a (OSet.add (Op1o op) acc)
     | Op2(op,a,b,_) ->
 	operators a (operators b (OSet.add (Op2o op) acc))
-    | Cst(_, _, _, _) -> assert false
+    | Cst(_, _, _) -> assert false
   in
   operators t OSet.empty
 
 let rec min_free_var = function
   | C0 -> 3
   | C1 -> 3
-  | Cst (_, _, _, _) -> 3
+  | Cst (_, _, _) -> 3
   | Var x -> x
   | If0(a,b,c,_) ->
       begin match min_free_var a with
@@ -54,6 +54,43 @@ let rec min_free_var = function
       min_free_var a
   | Op2 (_, a, b, _) ->
       min (min_free_var a) (min_free_var b)
+
+let rec simpl t =
+  if min_free_var t = 3 then Notations.cst (eval t 0L) t else
+  match t with
+  | If0 (C0, a, b, _) -> simpl a
+  | If0 (C1, a, b, _) -> simpl b
+  | If0 (Cst (v, _, _), a, b, _) -> if v = 0L then simpl a else simpl b
+  | If0 (_, a, b, _) when a == b -> simpl a
+  | Op1 (Not, Op1 (Not, a, _), _) -> simpl a
+  | Op1 (Shr1, Op1 (Shr1, Op1 (Shr1, Op1 (Shr1, t, _), _), _), _) ->
+      simpl (Notations.shr4 t)
+  | Op1 (Shr4, Op1 (Shr4, Op1 (Shr4, Op1 (Shr4, t, _), _), _), _) ->
+      simpl (Notations.shr16 t)
+  | Op2 (And, C0, t, _) | Op2 (And, t, C0, _)
+  | Op2 (And, Cst (0L, _, _), t, _) | Op2 (And, t, Cst (0L, _, _), _) ->
+      Notations.(cst 0L c0)
+  | Op2 (And, a, b, _) when a == b -> simpl a
+  | Op2 (And, (Op2 (And, a, b, _) as r), c, _) when b == c -> simpl r
+  | Op2 (Or, C0, t, _) | Op2 (Or, t, C0, _)
+  | Op2 (Or, Cst (0L, _, _), t, _) | Op2 (Or, t, Cst (0L, _, _), _) ->
+      simpl t
+  | Op2 (Or, a, b, _) when a == b -> simpl a
+  | Op2 (Or, (Op2 (Or, a, b, _) as r), c, _) when b == c -> simpl r
+  | Op2 (Xor, C0, t, _) | Op2 (Xor, t, C0, _)
+  | Op2 (Xor, Cst (0L, _, _), t, _) | Op2 (Xor, t, Cst (0L, _, _), _) ->
+      simpl t
+  | Op2 (Xor, a, b, _) when a == b -> Notations.(cst 0L c0)
+  | Op2 (Xor, Op2 (Xor, a, b, _), c, _) when b == c -> simpl a
+  | Op2 (Plus, C0, t, _) | Op2 (Plus, t, C0, _)
+  | Op2 (Plus, Cst (0L, _, _), t, _) | Op2 (Plus, t, Cst (0L, _, _), _) ->
+      simpl t
+  | Op2 (Plus, a, b, _) when a == b -> simpl (Notations.shl1 a)
+  | Op2 (Plus, Op2 (Plus, a, b, _), c, _) when b == c ->
+      simpl Notations.(a ++ shl1 b)
+  | t -> t
+
+
 
 type fold_state =
   | Required
@@ -131,7 +168,7 @@ let generate, generate_tfold, generate_novar =
 			acc:=
 			  List.fold_left (fun acc x ->
 			    List.fold_left (fun acc y ->
-			      if i = size-1-i && y < x then acc
+			      if i = size-1-i && get_exp_id y < get_exp_id x then acc
 			      else Notations.op2 op x y::acc)
 			      acc genr)
 			    !acc genl
@@ -203,12 +240,7 @@ let generate, generate_tfold, generate_novar =
 	      ops acc
 	  in
 	  let htbl = Term.H.create 13 in
-	  List.iter (fun x ->
-	    let e =
-	      if min_free_var x = 3 then Notations.cst (eval x 0L) x else x
-	    in
-	    Term.H.replace htbl e ()
-	  ) res;
+	  List.iter (fun x -> Term.H.replace htbl (simpl x) ()) res;
 	  memo.(size-1).(fold_state_int) <-
 	    Some
 	      (Term.H.fold (fun e _ acc -> e::acc) htbl [])
@@ -231,7 +263,8 @@ let generate, generate_tfold, generate_novar =
       if has_fold then List.rev_append (aux size Required) lst else lst
   in
   (fun ?(force_fold=true) size ?(exact=true) ops ->
-    generate force_fold (size-1) exact ops Notations.([c0;c1;mk_arg])),
+    generate force_fold (size-1) exact ops Notations.([c0;c1;mk_arg])
+  ),
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-5 in

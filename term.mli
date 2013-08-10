@@ -6,8 +6,7 @@ type exp = private
 | Fold of exp * exp * exp * tag
 | Op1 of op1 * exp * tag
 | Op2 of op2 * exp * exp * tag
-| Cst of int64 (* Value *) * int (* size of replaced term *) *
-      exp (* example of realisation *) * tag
+| Cst of int64 (* Value *) * exp (* example of realisation *) * tag
 and tag
 and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
 and op2 = | And | Or | Xor | Plus
