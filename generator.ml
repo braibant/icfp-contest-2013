@@ -117,8 +117,8 @@ let generate, generate_tfold, generate_novar,generate_context =
 		  for i = 1 to size-4 do
 		    for j = 1 to size-3-i do
 		      let gen1 = aux i Forbidden in
-		      let gen2 = aux j Inside in
-		      let gen3 = aux (size-2-i-j) Forbidden in
+		      let gen2 = aux j Forbidden in
+		      let gen3 = aux (size-2-i-j) Inside in
 		      acc:=
 			List.fold_left (fun acc x ->
 			  List.fold_left (fun acc y ->
@@ -260,13 +260,14 @@ let generate, generate_tfold, generate_novar,generate_context =
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     generate force_fold (size-1) exact ops Notations.([c0;c1;mk_arg])
   ),
-  (fun ?(force_fold=true) size ?(exact=true) ops ->
+  (fun size ?(exact=true) ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-5 in
     let lst =
-      generate force_fold size exact ops Notations.([c0;c1;mk_facc;mk_farg])
+      generate false size exact ops Notations.([c0;c1;mk_arg;mk_facc;mk_farg])
     in
-    List.rev_map (fun t -> Notations.(fold mk_arg c0 t)) lst),
+    List.rev_map (fun t -> Notations.(fold mk_arg c0 t)) lst
+  ),
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     generate force_fold (size-1) exact ops Notations.([c0;c1])),
   (fun size ops holes -> 
@@ -279,5 +280,3 @@ let generate_constants ?(force_fold=true) size ?(exact=true) ops =
 let generate_constants_witness size ops =
   List.rev_map (fun t -> t, Eval.eval t 0L) (generate_novar ~force_fold:false 
 					       ~exact:false size ops)
-
-  

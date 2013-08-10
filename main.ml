@@ -30,6 +30,7 @@ let train_offline () =
   let module Params = struct
     let n = Term.size secret
     let ops = Generator.operators secret
+    let tfold = false (* TODO *)
   end in
   let module Loop = Loop.FState(Params)(Oracle) in
   if !Config.interactive_mode
@@ -87,6 +88,7 @@ let train_online () =
     let module Params = struct
       let n = Term.size secret
       let ops = Generator.operators secret
+      let tfold = List.mem "tfold" pb.Response.operators
     end in 
     let module Loop = Loop.FState(Params)(Oracle) in 
     if !Config.interactive_mode 
@@ -108,6 +110,7 @@ let play_online problem =
     let ops =
       Generator.ops_from_list
         (List.map Term.op_of_string problem.operators)
+    let tfold = List.mem "tfold" problem.operators
   end in
   let module Loop = Loop.FState(Params)(Oracle) in
   if !Config.interactive_mode 

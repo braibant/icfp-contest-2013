@@ -89,7 +89,7 @@ let bind v t =
 	else if get_id x = Constants.fold_arg then mk_farg
 	else assert false
     | `If0 (e1, e2, e3) -> if0 (bind e1) (bind e2) (bind e3)
-    | `Fold (e0, e1, `Lam2 (_x, _y, e2)) -> fold (bind e0) (bind e2) (bind e2)
+    | `Fold (e0, e1, `Lam2 (_x, _y, e2)) -> fold (bind e0) (bind e1) (bind e2)
     | `Op1 (op, e) -> op1 op (bind e)
     | `Op2 (op, e1, e2) -> op2 op (bind e1) (bind e2)
   in bind t
