@@ -30,12 +30,6 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       v
   end
  
-
-
-  (* let _ = *)
-  (*   let (a, b, c, d, e, f) = Term.HC.stats () in *)
-  (*   Printf.printf "%d %d %d %d %d %d\n" a b c d e f *)
-
   let init = Bitv.create (Array.length terms) true
 
   let print (p:t)=
