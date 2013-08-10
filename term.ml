@@ -162,6 +162,7 @@ let subst_holes sigma t =
     | Op2 (o , e, f, _) -> Notations.op2 o (aux e) (aux f)
     | Cst (_, _, _) as e -> e
   in aux t
+<<<<<<< HEAD
 
 (** Reified representation of operators *)
 type op =
@@ -204,3 +205,5 @@ let string_of_op = function
   | Foldo -> "fold"
   | Op1o op -> string_of_op1 op
   | Op2o op -> string_of_op2 op
+=======
+>>>>>>> Synthesis of suitable terms, not tested
