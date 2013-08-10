@@ -10,7 +10,7 @@ module type ORACLE = sig
 end
 
 (* Client *)
-module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = struct
+module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O: ORACLE) = struct
   include X
 
   (* a bitvector representation of a set of the possible programs *)
@@ -18,8 +18,10 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
 
   let terms = Utils.begin_end_msg "computing terms" begin fun () ->
     if n < 8 then
-      Array.of_list (Generator.generate ~force_fold:false n ops)
-    else 
+      Array.of_list (
+        if tfold then Generator.generate_tfold n ops
+	else Generator.generate n ops)
+    else
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
       let values = O.eval keys in 
       let v = Array.of_list (Synthesis.main 8 8 (n - 7) ops keys values) in 

@@ -7,7 +7,7 @@ val all_ops : OSet.t
 
 val operators : Term.exp -> OSet.t
 val generate : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp list
-val generate_tfold : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp list
+val generate_tfold : int -> ?exact:bool -> OSet.t -> Term.exp list
 val generate_novar : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp list
 val generate_constants : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Int64.t list
 

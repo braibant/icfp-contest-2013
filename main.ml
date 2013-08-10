@@ -30,6 +30,7 @@ let train_offline () =
   let module Params = struct
     let n = Term.size secret
     let ops = Generator.operators secret
+    let tfold = false (* TODO *)
   end in
   let module Loop = Loop.FState(Params)(Oracle) in
   if !Config.interactive_mode
@@ -73,6 +74,7 @@ type problem_data = {
   id : string;
   operators : Generator.OSet.t;
   size : int;
+  tfold : bool;
 }
 
 let problem_data p = {
@@ -81,6 +83,7 @@ let problem_data p = {
     Generator.ops_from_list
       (List.map Term.op_of_string p.Protocol.Problem.Response.operators);
   size = p.Protocol.Problem.Response.size;
+  tfold = List.mem "tfold" p.Protocol.Problem.Response.operators
 }
 
 let play_online problem secret =
@@ -91,6 +94,7 @@ let play_online problem secret =
   let module Params = struct
     let n = problem.size
     let ops = problem.operators
+    let tfold = problem.tfold
   end in
   let module Loop = Loop.FState(Params)(Oracle) in
   if !Config.interactive_mode 
@@ -106,6 +110,7 @@ let play_training pb =
     id = pb.Response.id;
     size = Term.size secret;
     operators = Generator.operators secret;
+    tfold = List.mem "tfold" pb.Response.operators
   } in
   play_online problem (Some secret)
 

@@ -51,7 +51,7 @@ let rec ho_evalv sigma args env =
       (* compute the new value of acc *)
 	acc := aux e2;
       (* shift e0 *)
-	e0 := Array.map (fun e -> shift_right_logical e 2) !e0;
+	e0 := Array.map (fun e -> shift_right_logical e 8) !e0;
       done;
       !acc
   in aux 
@@ -102,7 +102,7 @@ let eval =
       (* compute the new value of acc *)
 	acc := eval e2;
       (* shift e0 *)
-	e0 := shift_right_logical !e0 2;
+	e0 := shift_right_logical !e0 8;
       done;
       !acc
     | Cst (a, _, _) -> a

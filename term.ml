@@ -182,9 +182,7 @@ let op_of_string = function
   | "plus" -> Op2o Plus
   | "if0" -> If0o
   | "fold" -> Foldo
-  | "tfold" ->
-    (* no tfold support yet *)
-    Foldo 
+  | "tfold" -> Foldo
   | op -> failwith (Printf.sprintf "Parser.parse_op: unknown operator %S" op)
 
 let string_of_op1 = function
