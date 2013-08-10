@@ -7,7 +7,6 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
   include S
   open Loop
 
-  let eval v = Term.evalv secret v
 
   let discriminating n = Array.init n (fun x -> Term.rnd64 ())
 
@@ -18,9 +17,9 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
       if i = confidence - 1 then Equiv
       else
 	let x = tests.(i) in
-	if Term.eval p' x = Term.eval secret x
+	if Eval.eval p' x = Eval.eval secret x
 	then aux (succ i)
-	else Discr (x,Term.eval secret x)
+	else Discr (x,Eval.eval secret x)
     in aux 0
 
   let reveal () = secret

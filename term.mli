@@ -31,8 +31,6 @@ module Constants :
 (* a really uniform random int64 *)
 val rnd64 : unit -> int64
 
-val eval : exp -> int64 -> int64
-val evalv : exp -> int64 array -> int64 array
 
 module Notations :
     sig
