@@ -38,21 +38,17 @@ let train_offline () =
 
 
 (** Online training, on the server *)
-open Net
-open Protocol
-
-
 module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
   let eval v =
-    let open Eval in 
-    match send_eval (Request.({name = `Id X.id; arguments = v})) with 
+    let open Protocol.Eval in 
+    match Net.send_eval (Request.({name = `Id X.id; arguments = v})) with 
     | `Eval_body (`Ok r) -> r
     | _ -> invalid_arg "eval"
 
   let guess t =
     let program =  Print.print_program t in 
-    let open Guess in 
-      match send_guess (Request.({id = X.id; program})) with 
+    let open Protocol.Guess in 
+      match Net.send_guess (Request.({id = X.id; program})) with 
       | `Guess_body {Response.status=`Win} -> Loop.Equiv 
       | `Guess_body {Response.status=`Mismatch m} -> Loop.Discr (m.Response.input, m.Response.challenge_result )
       | `Guess_body {Response.status=`Error msg} ->
@@ -65,10 +61,10 @@ end
 (* this is the main handler for training problems. I tested it in
    interactive mode, but not yet in automated mode [loop] *)
 let train_online () =
-  let open Training in 
-  match send_training ({
-    Protocol.Training.Request.size = Some !Config.problem_size;
-    Protocol.Training.Request.operators = Some []
+  let open Protocol.Training in 
+  match Net.send_training ({
+    Request.size = Some !Config.problem_size;
+    Request.operators = Some []
   })
   with
   | `Training_body pb ->
