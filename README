@@ -4,10 +4,13 @@ External dependencies:
     http://gallium.inria.fr/~fpottier/pprint/pprint-20130324.tar.gz
 
 - JSON serialization: yojson
+    http://mjambon.com/yojson.html
     opam install yojson
 
 - Networking: ocamlnet
+    http://projects.camlcity.org/projects/ocamlnet.html
     opam install ocamlnet
 
 - Bit vectors implementation: bitv
+    https://github.com/backtracking/bitv
     opam install bitv

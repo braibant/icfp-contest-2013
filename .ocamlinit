@@ -3,6 +3,7 @@
 #require "bitv";;
 #require "yojson";;
 #require "netclient";;
+#require "camlp4";;
 #require "camlp4.fulllib";;
 #load "camlp4lib.cma";;
 #directory "_build";;
