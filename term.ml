@@ -32,8 +32,7 @@ module HC = Hashcons.Make(struct
     | C0, C0 -> true
     | C1, C1 -> true
     | Var id1, Var id2 -> id1 = id2
-    | Hole (id1,_), Hole (id2,_) -> id1 = id2
-
+    | Hole (id1,b1), Hole (id2,b2) -> id1 = id2 && b1 = b2
     | If0 (a1, b1, c1, _), If0 (a2, b2, c2, _) ->
 	a1 == a2 && b1 == b2 && c1 == c2
     | Fold (a1, b1, c1, _), Fold (a2, b2, c2, _) ->
