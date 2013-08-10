@@ -38,7 +38,8 @@ let train_offline () =
 
 
 (** Online training, on the server *)
-module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
+module OnlineOracle(X: sig val id : string val secret : Term.exp option end) =
+struct
   let eval v =
     let open Protocol.Eval in 
     match Net.send_eval (Request.({name = `Id X.id; arguments = v})) with 
@@ -53,17 +54,21 @@ module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
     let open Protocol.Guess in 
       match Net.send_guess (Request.({id = X.id; program})) with 
       | `Guess_body {Response.status=`Win} -> Loop.Equiv 
-      | `Guess_body {Response.status=`Mismatch m} -> Loop.Discr (m.Response.input, m.Response.challenge_result )
+      | `Guess_body {Response.status=`Mismatch m} ->
+        Loop.Discr (m.Response.input, m.Response.challenge_result )
       | `Guess_body {Response.status=`Error msg} ->
-	failwith (Printf.sprintf "guess: received error message from server\nmsg: %s\nprogram:%s\n" msg program)
+        let msg =
+          Printf.sprintf
+            "guess: received error message from server\nmsg: %s\nprogram:%s\n"
+            msg program
+        in failwith msg
       | #Net.unexpected as other ->
         invalid_arg (Printf.sprintf "guess: %s" (Net.str_of_return other))
 
-  let reveal () = Some X.secret
+  let reveal () = X.secret
 end
 
-(* this is the main handler for training problems. I tested it in
-   interactive mode, but not yet in automated mode [loop] *)
+(* this is the main handler for training problems.  *)
 let train_online () =
   let open Protocol.Training in 
   match Net.send_training ({
@@ -77,7 +82,7 @@ let train_online () =
     Print.print_exp_nl secret;
     let module Oracle = OnlineOracle(struct
       let id= pb.Response.id
-      let secret = secret
+      let secret = Some secret
     end) in
     let module Params = struct
       let n = Term.size secret
@@ -90,20 +95,25 @@ let train_online () =
   | #Net.unexpected as other ->
     invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
 
+
 (** Setting up usage *)
 
 let _ =
-  Arg.parse Config.args (fun rest -> ()) "ICFP contest 2013 prototype";
-  match !Config.source with
-    | None ->
-      Print.print PPrint.(flow (break 1) (words
-        "no source of challenge has been selected; \
-         you must pass either --train-offline, --train-online \
-         or, when it will be supported, the --real-stuff."));
-      print_newline ();
-    | Some Config.Real_stuff ->
-      print_endline "This mode is not yet supported."
-    | Some Config.Train_offline ->
-      train_offline ()
-    | Some Config.Train_online ->
-      train_online ()
+  (* this test allows to also load main.cmo in the toplevel;
+     please don't use observable global effect outside it *)
+  if not !Sys.interactive then begin
+    Arg.parse Config.args (fun rest -> ()) "ICFP contest 2013 prototype";
+    match !Config.source with
+      | None ->
+        Print.print PPrint.(flow (break 1) (words
+          "no source of challenge has been selected; \
+           you must pass either --train-offline, --train-online \
+           or, when it will be supported, the --real-stuff."));
+        print_newline ();
+      | Some Config.Real_stuff ->
+        print_endline "This mode is not yet supported."
+      | Some Config.Train_offline ->
+        train_offline ()
+      | Some Config.Train_online ->
+        train_online ()
+  end
