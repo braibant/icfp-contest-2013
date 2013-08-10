@@ -63,8 +63,8 @@ let h_evalv p sigma args =
   env.(0) <- args;
   ho_evalv sigma args env p
 
-let evalv p args = 
-  h_evalv p [||] args 
+(* let evalv p args =  *)
+(*   h_evalv p [||] args  *)
 
     
 
@@ -112,4 +112,4 @@ let eval =
   fun p x -> env.(Constants.arg) <- x; eval p
 ;;
 
-(* let evalv p v = Array.map (eval p) v;; *)
+let evalv p v = Array.map (eval p) v;;

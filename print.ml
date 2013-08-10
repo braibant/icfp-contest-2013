@@ -52,6 +52,9 @@ let rec doc_sexp = function
 
 let doc_exp exp = doc_sexp (sexp_exp exp)
 
+let fprint fmt doc =
+  ToChannel.pretty 1. 72 fmt doc
+
 let print doc =
   ToChannel.pretty 1. 72 stdout doc
 
@@ -65,5 +68,5 @@ let print_program t =
 
 let print_exp e = print (doc_exp e)
 let print_exp_nl e = print (doc_exp e ^^ hardline)
-
+let int i = string (string_of_int i)
 include PPrint
