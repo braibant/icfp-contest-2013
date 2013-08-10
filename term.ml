@@ -99,6 +99,10 @@ module Constants = struct
 end
 
 open Int64
+let rnd64 () =
+  if Random.bool ()
+  then Random.int64 Int64.max_int
+  else Int64.neg (Random.int64 Int64.max_int)
 
 let eval =
   let env = Array.create 3 0L in 
@@ -141,6 +145,8 @@ let eval =
   in
   fun p x -> env.(Constants.arg) <- x; eval p
 ;;
+
+let evalv p v = Array.map (eval p) v
 
 module Notations = struct
     

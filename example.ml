@@ -5,8 +5,8 @@ let _ = Random.self_init ()
 
 let gen =
   let x =  mk_arg in
-  let y = mk_farg in
-  let acc = mk_facc in
+  let _y = mk_farg in
+  let _acc = mk_facc in
 
   let rec gen n =
     if n = 0 then
