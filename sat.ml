@@ -1,6 +1,8 @@
 open Term
 
-let zero_var = 10000000000000
+let zero_var =
+  try int_of_string "10000000000000"
+  with _ -> 10000000
 
 type sat_state =
     { mutable next_var : int;
