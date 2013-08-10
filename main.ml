@@ -154,7 +154,7 @@ end
 
 let problem_difficulty prob =
   let open Protocol.Problem.Response in
-  float (List.length prob.operators) ** float prob.size
+  (* float (List.length prob.operators) ** *) float prob.size
 
 let problem_of_id id =
   let open Protocol.Problem.Response in
@@ -217,11 +217,12 @@ let solve_easy_problems max_size =
 
   let problems = unsolved_problems_sorted () in
 
-  (* we only attack problems without fold *)
+  (* we only attack problems without fold, but now accept tfold *)
   let has_fold problem =
     let open Protocol.Problem.Response in
     List.mem "fold" problem.operators
-    || List.mem "tfold" problem.operators in
+    (* || List.mem "tfold" problem.operators *)
+  in
   let problems = List.filter (fun p -> not (has_fold p)) problems in
 
   let attack problem =
