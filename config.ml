@@ -11,6 +11,7 @@ type source =
 | Train_offline
 | Train_online
 | Single_problem of string
+| Easy_problems_of_size_at_most of int
 
 let source = ref None
 
@@ -39,8 +40,13 @@ let args =
     " play offline with a randomly-generated term";
     "--train-online", Unit (set_source Train_online),
     " use the online training mode";
+
     "--single-problem", String (fun id -> set_source (Single_problem id) ()),
     "ID run online against the problem of the given id";
+
+    "--solve-easy-problems", Int (fun n ->
+      set_source (Easy_problems_of_size_at_most n) ()),
+    "INT solve easy problems of size at most the given size";
 
     "--log", Set_string logfile, "PATH set log file";
     "-o", Set_string logfile, " (idem)";

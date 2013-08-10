@@ -167,21 +167,21 @@ let show_problem id =
   with Not_found ->
     Printf.eprintf "No problem with id %s.\n%!" id
 
+let unsolved_problems_sorted () =
+  List.sort (fun pa pb ->
+    compare (problem_difficulty pa) (problem_difficulty pb))
+    (Lazy.force unsolved_problems)
+
 let list_problems () =
   if not !Config.sync_problem_list then sync_problem_list ();
   let rec take n = function
     | [] -> []
     | hd::tl -> if n = 0 then [] else hd :: take (n - 1) tl in
-  let problems_sorted =
-    List.sort (fun pa pb ->
-      compare (problem_difficulty pa) (problem_difficulty pb))
-      (Lazy.force unsolved_problems)
-  in
+  let problems_sorted = unsolved_problems_sorted () in
   let easy = take 10 problems_sorted in
   print_endline "10 easy problems:";
   List.iter print_problem easy;
   print_newline ()
-
 
 let show_status () =
   match Net.send_status_raw () with
@@ -191,6 +191,29 @@ let show_status () =
       ()
     | #Net.unexpected as other ->
       invalid_arg (Printf.sprintf "status: %s" (Net.str_of_return other))
+
+let solve_easy_problems max_size =
+  let problems = unsolved_problems_sorted () in
+
+  (* we only attack problems without fold *)
+  let has_fold problem =
+    let open Protocol.Problem.Response in
+    List.mem "fold" problem.operators
+    || List.mem "tfold" problem.operators in
+  let problems = List.filter (fun p -> not (has_fold p)) problems in
+
+  let attack problem =
+    Printf.printf "Attacking problem:\n";
+    print_problem problem;
+    let data = problem_data problem in
+    if data.size > max_size then begin
+      Printf.printf "Problem size too big, stopping\n%!";
+      exit 0
+    end;
+    play_online data None
+  in
+
+  List.iter attack problems
 
 (** Setting up usage *)
 
@@ -214,14 +237,18 @@ let _ =
 
     print_newline ();
 
+    let interaction =
+      if !Config.interactive_mode
+      then "interactive" else "non-interactive" in
+
     match !Config.source with
       | None -> ()
       | Some Config.Train_offline ->
         train_offline ()
       | Some Config.Train_online ->
         train_online ()
-      | Some (Config.Single_problem id) ->
-        begin match
+      | Some (Config.Single_problem id) -> begin
+        match
           (try Some (problem_of_id id) with Not_found -> None)
         with
           | None ->
@@ -231,15 +258,22 @@ let _ =
           | Some prob ->
             Printf.printf
               "You want to play in %s mode against the following problem:\n"
-              (if !Config.interactive_mode
-               then "interactive" else "non-interactive");
+              interaction;
             print_problem prob;
-            print_endline "Confirm? y/n";
-            begin match read_line () with
-              | "y" -> play_online (problem_data prob) None
-              | "n" -> ()
-              | other ->
+            match Utils.ask_confirmation () with
+              | `Yes -> play_online (problem_data prob) None
+              | `No -> ()
+              | `Other other -> 
                 Printf.printf "unknown answer %S, aborting.\n%!" other
-            end
+        end
+      | Some (Config.Easy_problems_of_size_at_most max_size) -> begin
+          Printf.printf
+            "You want to play in %s mode against easy problems of size <= %d.\n"
+            interaction max_size;
+          match Utils.ask_confirmation () with
+          | `Yes -> solve_easy_problems max_size
+          | `No -> ()
+          | `Other other ->
+            Printf.printf "unknown answer %S, aborting.\n%!" other
         end
   end
