@@ -53,7 +53,7 @@ let problem_of_json = protect "problem" $ fun json ->
   let operators = convert_each to_string (get "operators") in
   let solved = to_bool_option (get "solved") in
   let timeleft = to_number_option (get "timeLeft") in
-  Problem.({id; size; operators; solved; timeleft})
+  Problem.({json; id; size; operators; solved; timeleft})
 
 
 (** Eval *)
