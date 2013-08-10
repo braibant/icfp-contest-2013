@@ -6,6 +6,8 @@ type sat_state =
     { mutable next_var : int;
       mutable clauses : int list list }
 
+let init_state () = { next_var = 1; clauses = [] }
+
 let new_var state =
   let res = state.next_var in
   state.next_var <- res + 1;
@@ -15,6 +17,57 @@ let add_clause state clause =
   if not (List.mem (-zero_var) clause) then
     let clause = List.filter ((<>) zero_var) clause in
     state.clauses <- clause :: state.clauses
+
+type sat_result =
+  | Sat of bool array
+  | Unsat
+  | Unknown
+
+let run_minisat problems =
+  let datas =
+    List.map (fun problem ->
+      let (in_file_name, chan) = Filename.open_temp_file "minisat_input" ".cnf" in
+      Printf.fprintf chan "c blah\n";
+      Printf.fprintf chan "p cnf %d %d\n" (problem.next_var-1) (List.length problem.clauses);
+      List.iter (fun cl ->
+	List.iter (Printf.fprintf chan "%d ") cl;
+	Printf.fprintf chan "0\n")
+	problem.clauses;
+      close_out chan;
+      let out_file_name = Filename.temp_file "minisat" ".out" in
+      let cmd =
+	Printf.sprintf "./minisat_static -rnd-seed=%d -verb=0 -cpu-lim=1 -mem-lim=100 %s %s"
+	  (Random.bits ()) in_file_name out_file_name
+      in
+      Printf.printf "%s\n" cmd;
+      (Unix.open_process_out cmd, in_file_name, out_file_name, problem))
+      problems
+  in
+  List.map (fun (chan, in_file_name, out_file_name, problem) ->
+    ignore (Unix.close_process_out chan);
+    let res =
+      try
+	let chan = open_in out_file_name in
+	try
+	  match input_line chan with
+	  | "UNSAT" -> close_in chan; Unsat
+	  | "SAT" ->
+	      let res = Array.make problem.next_var false in
+	      for i = 1 to problem.next_var -1 do
+		res.(i) <-
+		  Scanf.fscanf chan " %d" (fun x -> assert (abs x = i); x > 0);
+	      done;
+	      close_in chan;
+	      Sat res
+	  | _ -> close_in chan; Unknown
+	with
+	| End_of_file -> close_in chan; Unknown
+      with Sys_error _ -> Unknown
+    in
+    (try Unix.unlink in_file_name with Unix.Unix_error (_, _, _) -> ());
+    (try Unix.unlink out_file_name with Unix.Unix_error (_, _, _) -> ());
+    res)
+    datas
 
 let rec encode_formula state env t =
   match t with
@@ -132,3 +185,31 @@ let rec encode_formula state env t =
 	if Int64.logand 1L (Int64.shift_right_logical v i) = 1L then
 	  -zero_var
 	else zero_var)
+
+let discriminate l =
+  let pbs =
+    List.map (fun (t1, t2) ->
+      let state = init_state () in
+      let env = [|Array.init 64 (fun _ -> new_var state)|] in
+      let enc1 = encode_formula state env t1 in
+      let enc2 = encode_formula state env t2 in
+      let diff = Array.init 64 (fun _ -> new_var state) in
+      for i = 0 to 63 do
+	add_clause state [enc1.(i); enc2.(i); -diff.(i)];
+	add_clause state [-enc1.(i); -enc2.(i); -diff.(i)]
+      done;
+      add_clause state (Array.to_list diff);
+      (state, env.(0)))
+      l
+  in
+  let res = run_minisat (List.map fst pbs) in
+  List.map2 (fun (_, env) res ->
+    match res with
+    | Sat data ->
+	let res = ref 0L in
+	for i = 0 to 63 do
+	  if data.(env.(i)) then res := Int64.logor !res (Int64.shift_left 1L i)
+	done;
+	Some !res
+    | _ -> None)
+    pbs res
