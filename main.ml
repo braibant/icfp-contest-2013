@@ -97,6 +97,18 @@ let play_online problem secret =
   then Loop.iloop ()
   else Loop.loop ()
 
+let play_training pb =
+  let open Protocol.Training in 
+  let secret = Parser.prog_of_string (pb.Response.challenge) in 
+  Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
+  Print.print_exp_nl secret;
+  let problem = {
+    id = pb.Response.id;
+    size = Term.size secret;
+    operators = Generator.operators secret;
+  } in
+  play_online problem (Some secret)
+
 (* this is the main handler for training problems.  *)
 let train_online () =
   let open Protocol.Training in 
@@ -106,22 +118,20 @@ let train_online () =
   })
   with
   | `Training_body pb ->
-    let secret = Parser.prog_of_string (pb.Response.challenge) in 
-    Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
-    Print.print_exp_nl secret;
-    let problem = {
-      id = pb.Response.id;
-      size = Term.size secret;
-      operators = Generator.operators secret;
-    } in
-    play_online problem (Some secret)
+    Utils.write_json_to_file !Config.last_training_file pb.Response.json;
+    play_training pb
   | #Net.unexpected as other ->
     invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
+
+let train_serialized () =
+  let json = Utils.read_json_from_file !Config.last_training_file in
+  let pb = Protocol_json.training_of_json json in
+  play_training pb
 
 (** manipulating the problem list *)
 
 let problems = lazy begin
-  let json = Yojson.Basic.from_file !Config.problems_file in
+  let json = Utils.read_json_from_file !Config.problems_file in
   Yojson.Basic.Util.convert_each Protocol_json.problem_of_json json
 end
 
@@ -245,6 +255,8 @@ let _ =
         train_offline ()
       | Some Config.Train_online ->
         train_online ()
+      | Some Config.Train_serialized ->
+        train_serialized ()
       | Some (Config.Single_problem id) -> begin
         match
           (try Some (problem_of_id id) with Not_found -> None)

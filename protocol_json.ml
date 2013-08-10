@@ -130,7 +130,7 @@ let training_of_json = protect "training" $ fun json ->
   let id = to_string (get "id") in
   let size = to_int (get "size") in
   let operators = convert_each to_string (get "operators") in
-  { challenge; id; size; operators }
+  { json; challenge; id; size; operators }
 
 
 (** Status *)

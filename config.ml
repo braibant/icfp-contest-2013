@@ -6,10 +6,12 @@ let problem_size = ref 4
 
 let solved_file = ref "solved_problems"
 let problems_file = ref "problems"
+let last_training_file = ref "last_training"
 
 type source =
 | Train_offline
 | Train_online
+| Train_serialized
 | Single_problem of string
 | Easy_problems_of_size_at_most of int
 
@@ -40,6 +42,8 @@ let args =
     " play offline with a randomly-generated term";
     "--train-online", Unit (set_source Train_online),
     " use the online training mode";
+    "--train-serialized", Unit (set_source Train_serialized),
+    " play offline with the last online training test, if serialized";
 
     "--single-problem", String (fun id -> set_source (Single_problem id) ()),
     "ID run online against the problem of the given id";

@@ -160,6 +160,7 @@ module Training = struct
 
   module Response= struct
     type training_problem = {
+      json: Yojson.Basic.json;
       challenge: string; (* some \BV program P *)
       id: string; (* a traning problem ID associated with P *)
       size: int; (* |P| (equal to the request size if present) *)

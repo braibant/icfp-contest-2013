@@ -11,3 +11,8 @@ let ask_confirmation () =
     | "n" | "N" | "no" -> `No
     | other -> `Other other
 
+let write_json_to_file file json =
+  Yojson.Basic.to_file ~std:true file json
+
+let read_json_from_file file =
+  Yojson.Basic.from_file ~fname:file file
