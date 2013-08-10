@@ -24,7 +24,7 @@ module H : Hashtbl.S with type key = exp
 val size : exp -> int
 
 val holes : exp -> int
-
+val renumber_holes : exp -> exp
 val subst_holes : exp array -> exp  -> exp
 
 module Constants :

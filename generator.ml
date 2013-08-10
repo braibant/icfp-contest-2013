@@ -269,12 +269,10 @@ let generate, generate_tfold, generate_novar,generate_context =
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     generate force_fold (size-1) exact ops Notations.([c0;c1])),
   (fun size ops holes -> 
-    generate false size false ops (Notations.([c0;c1;mk_arg]@holes))
+    List.rev_map 
+      Term.renumber_holes (generate false size false ops (Notations.([c0;c1;mk_arg; hole 0 false])))
   )
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =
   List.rev_map (fun t -> Eval.eval t 0L) (generate_novar ~force_fold ~exact size ops)
 
-let generate_constants_witness size ops =
-  List.rev_map (fun t -> t, Eval.eval t 0L) (generate_novar ~force_fold:false 
-					       ~exact:false size ops)
