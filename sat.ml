@@ -105,26 +105,27 @@ let rec encode_formula state env t =
 	acc := encode_formula state env c
       done;
       !acc
-  | Op1(Not, a, _) ->
-      let a = encode_formula state env a in
+  | Op1 ([], _, _) -> assert false
+  | Op1(Not :: q, a, _) ->
+      let a = encode_formula state env (Term.__op1 q a) in
       Array.map (fun x -> -x) a
-  | Op1(Shl1, a, _) ->
-      let a = encode_formula state env a in
+  | Op1(Shl1::q , a, _) ->
+      let a = encode_formula state env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 0 res 1 63;
       res
-  | Op1(Shr1, a, _) ->
-      let a = encode_formula state env a in
+  | Op1(Shr1::q, a, _) ->
+      let a = encode_formula state env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 1 res 0 63;
       res
-  | Op1(Shr4, a, _) ->
-      let a = encode_formula state env a in
+  | Op1(Shr4::q, a, _) ->
+      let a = encode_formula state env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 4 res 0 60;
       res
-  | Op1(Shr16, a, _) ->
-      let a = encode_formula state env a in
+  | Op1(Shr16::q, a, _) ->
+      let a = encode_formula state env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 16 res 0 48;
       res

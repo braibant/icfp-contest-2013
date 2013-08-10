@@ -5,7 +5,7 @@ type exp =
 | Hole of ident * bool 
 | If0 of exp * exp * exp * tag
 | Fold of exp * exp * exp * tag
-| Op1 of op1 * exp * tag
+| Op1 of op1 list * exp * tag
 | Op2 of op2 * exp * exp * tag
 | Cst of int64 (* Value *) * exp (* example of realisation *) * tag
 and tag = int
@@ -45,6 +45,9 @@ module HC = Hashcons.Make(struct
 	a1 = a2
     | _ -> false
 
+  let hash_op1 op =
+    match op with Not -> 19 | Shl1 -> 23 | Shr1 -> 59 | Shr4 -> 61 | Shr16 -> 67
+      
   let hash x =
     match x with
     | C0 -> 13
@@ -55,10 +58,11 @@ module HC = Hashcons.Make(struct
 	Hashcons.combine_list get_exp_id 31 [a;b;c]
     | Fold (a, b, c, _) ->
 	Hashcons.combine_list get_exp_id 37 [a;b;c]
-    | Op1 (op, a, _) ->
-	Hashcons.combine
-	  (match op with Not -> 19 | Shl1 -> 23 | Shr1 -> 59 | Shr4 -> 61 | Shr16 -> 67)
+    | Op1 (ops, a, _) ->
+	Hashcons.combine_list
+	  hash_op1
 	  (get_exp_id a)
+	  ops
     | Op2 (op, a, b, _) ->
 	Hashcons.combine2
 	  (match op with And -> 71 | Or -> 73 | Xor -> 79 | Plus -> 83)
@@ -100,7 +104,7 @@ let holes x =
   let (+) = max in 
   let rec aux = function
     | C0 | C1 | Var _ -> min_int 
-    | Hole (n,_) -> n
+    | Hole (n,_) -> n + 1
     | If0 (e,f,g,_) -> aux e + aux f + aux g
     | Fold (e,f,g, _) -> aux e + aux f + aux g
     | Op1 (_, e, _) -> aux e
@@ -138,12 +142,31 @@ module Notations = struct
   let op2 op x y = HC.hashcons (Op2 (op, x, y, -1))
     
   (* unop *)
-  let (~~) x = HC.hashcons (Op1 (Not, x, -1))
-  let shl1 x = HC.hashcons (Op1 (Shl1, x, -1))
-  let shr1 x = HC.hashcons (Op1 (Shr1, x, -1))
-  let shr4 x = HC.hashcons (Op1 (Shr4, x, -1))
-  let shr16 x = HC.hashcons (Op1 (Shr16, x, -1))
-  let op1 op x = HC.hashcons (Op1 (op, x, -1))
+  let compose_op1 op ops =
+    match op, ops with
+    | Not, Not::q -> q
+    | Shr1, Shr1 :: Shr1 :: Shr1 :: q -> Shr4 ::q
+    | Shr4, Shr4 :: Shr4 :: Shr4 :: q -> Shr16 ::q
+    | _, _ -> op :: ops
+    
+  let op1 op x = 
+    (* match op,x with *)
+    (* | _, Op1 (ops,t,_) -> *)
+    (*   let ops = compose_op1 op ops in *)
+    (*   if ops = [] then t else *)
+    (*   HC.hashcons (Op1 (ops, t, -1)) *)
+    (* | Shr1, C0 | Shr1, C1 -> c0 *)
+    (* | Shr4, C0 | Shr4, C1 -> c0 *)
+    (* | Shr16, C0 | Shr16, C1 -> c0 *)
+    (* | Shl1, C0 -> c0 *)
+    (* | _, x -> *) HC.hashcons (Op1 ([op],x, -1))
+     
+  let (~~) x = op1 Not x 
+  let shl1 x = op1 Shl1 x
+  let shr1 x = op1 Shr1 x
+  let shr4 x = op1 Shr4 x
+  let shr16 x = op1 Shr16 x
+
 
   let if0 c a b = HC.hashcons (If0 (c, a, b, -1))
   let fold c a b = HC.hashcons (Fold (c, a, b, -1))
@@ -151,13 +174,18 @@ module Notations = struct
   let hole n b = HC.hashcons (Hole (n,b))
 end 
 
+let __op1 ops x =
+  match ops with
+  | [] -> x
+  | _ ->  HC.hashcons (Op1 (ops,x,-1))
+
 let subst_holes sigma t =
   let rec aux = function
     | C0 | C1 | Var _ as e-> e
     | Hole (n,_) -> sigma.(n)
     | If0 (c,f,g,_) -> Notations.if0 (aux c) (aux f) (aux g)
     | Fold (c,f,g, _) -> Notations.fold (aux c) (aux f) (aux g)
-    | Op1 (o , e, _) -> Notations.op1 o (aux e)
+    | Op1 (o , e, _) -> HC.hashcons (Op1 (o,aux e,-1)) (* todo etre plus malin et fusionner les listes *)
     | Op2 (o , e, f, _) -> Notations.op2 o (aux e) (aux f)
     | Cst (_, _, _) as e -> e
   in aux t

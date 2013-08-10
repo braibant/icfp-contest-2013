@@ -19,8 +19,9 @@ let operators t =
 	operators a (operators b (operators c (OSet.add If0o acc)))
     | Fold(a,b,c,_) ->
 	operators a (operators b (operators c (OSet.add Foldo acc)))
-    | Op1(op,a,_) ->
-	operators a (OSet.add (Op1o op) acc)
+    | Op1(ops,a,_) ->
+      let l = ops_from_list (List.map (fun x -> Op1o x) ops) in
+	operators a (OSet.union l acc)
     | Op2(op,a,b,_) ->
 	operators a (operators b (OSet.add (Op2o op) acc))
     | Cst(_, _, _) -> assert false
@@ -57,11 +58,11 @@ let rec simpl t =
   | If0 (C1, a, b, _) -> simpl b
   | If0 (Cst (v, _, _), a, b, _) -> if v = 0L then simpl a else simpl b
   | If0 (_, a, b, _) when a == b -> simpl a
-  | Op1 (Not, Op1 (Not, a, _), _) -> simpl a
-  | Op1 (Shr1, Op1 (Shr1, Op1 (Shr1, Op1 (Shr1, t, _), _), _), _) ->
-      simpl (Notations.shr4 t)
-  | Op1 (Shr4, Op1 (Shr4, Op1 (Shr4, Op1 (Shr4, t, _), _), _), _) ->
-      simpl (Notations.shr16 t)
+  (* | Op1 (Not, Op1 (Not, a, _), _) -> simpl a *)
+  (* | Op1 (Shr1, Op1 (Shr1, Op1 (Shr1, Op1 (Shr1, t, _), _), _), _) -> *)
+  (*     simpl (Notations.shr4 t) *)
+  (* | Op1 (Shr4, Op1 (Shr4, Op1 (Shr4, Op1 (Shr4, t, _), _), _), _) -> *)
+  (*     simpl (Notations.shr16 t) *)
   | Op2 (And, C0, t, _) | Op2 (And, t, C0, _)
   | Op2 (And, Cst (0L, _, _), t, _) | Op2 (And, t, Cst (0L, _, _), _) ->
       Notations.(cst 0L c0)
@@ -271,7 +272,7 @@ let generate, generate_tfold, generate_novar,generate_context =
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     generate force_fold (size-1) exact ops Notations.([c0;c1])),
   (fun size ops holes -> 
-    generate false size false ops (Notations.([c0;c1;mk_arg]))
+    generate false size false ops (Notations.([c0;c1;mk_arg]@holes))
   )
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =

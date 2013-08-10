@@ -12,7 +12,7 @@ type sexp =
 | List of sexp list
 
 let rec sexp_exp = function
-  | Hole _ -> assert false
+  | Hole _ -> Word "[]"
   | C0 -> Word "0"
   | C1 -> Word "1"
   | Var x -> Word (string_of_id x)
@@ -20,7 +20,13 @@ let rec sexp_exp = function
     List [Word "if0"; sexp_exp p; sexp_exp a; sexp_exp b]
   | Fold (bytes, init, lam, _) ->
     List [Word "fold"; sexp_exp bytes; sexp_exp init; sexp_lam2 lam]
-  | Op1 (op, e, _) -> List [Word (string_of_op1 op); sexp_exp e]
+  | Op1 (ops, e, _) ->
+    let rec aux = function
+      | [] -> assert false
+      | [op] -> List [Word (string_of_op1 op); sexp_exp e]
+      | op::ops -> List [Word (string_of_op1 op); aux  ops]
+    in
+    aux ops
   | Op2 (op, e1, e2, _) -> List [Word (string_of_op2 op); sexp_exp e1; sexp_exp e2]
   | Cst (_, e, _) -> sexp_exp e
 and sexp_lam_generic args e =
