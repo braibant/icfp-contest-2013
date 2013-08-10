@@ -106,13 +106,6 @@ let send_eval request =
     | #unexpected as ret -> ret
     | `Body json -> `Eval_body (Protocol_json.eval_of_json json)
 
-exception Bad_request
-exception Unauthorized
-exception Not_found
-exception Gone
-exception Already_solved
-exception Request_too_big
-
 let send_guess request =
   let name = name `Guess in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_guess request) in
