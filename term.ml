@@ -97,6 +97,18 @@ let size x =
     | Cst (_, _, _) -> assert false
   in aux x + 1
 
+let holes x =
+  let (+) = max in 
+  let rec aux = function
+    | C0 | C1 | Var _ -> min_int 
+    | Hole (n,_) -> n
+    | If0 (e,f,g,_) -> aux e + aux f + aux g
+    | Fold (e,f,g, _) -> aux e + aux f + aux g
+    | Op1 (_, e, _) -> aux e
+    | Op2 (_, e, f, _) -> aux e + aux f
+    | Cst (_, _, _) -> min_int
+  in aux x
+
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 
   let arg = 0
@@ -136,4 +148,17 @@ module Notations = struct
 
   let if0 c a b = HC.hashcons (If0 (c, a, b, -1))
   let fold c a b = HC.hashcons (Fold (c, a, b, -1))
+
+  let hole n b = HC.hashcons (Hole (n,b))
 end 
+
+let subst_holes sigma t =
+  let rec aux = function
+    | C0 | C1 | Var _ as e-> e
+    | Hole (n,_) -> sigma.(n)
+    | If0 (c,f,g,_) -> Notations.if0 (aux c) (aux f) (aux g)
+    | Fold (c,f,g, _) -> Notations.fold (aux c) (aux f) (aux g)
+    | Op1 (o , e, _) -> Notations.op1 o (aux e)
+    | Op2 (o , e, f, _) -> Notations.op2 o (aux e) (aux f)
+    | Cst (_, _, _) as e -> e
+  in aux t

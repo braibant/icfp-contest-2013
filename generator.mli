@@ -12,3 +12,6 @@ val generate : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp list
 val generate_tfold : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp list
 val generate_novar : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp list
 val generate_constants : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Int64.t list
+
+val generate_constants_witness : int -> OSet.t -> (Term.exp * Int64.t) list
+val generate_context : int -> OSet.t -> Term.exp list -> Term.exp list
