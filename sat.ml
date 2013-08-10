@@ -217,7 +217,13 @@ let discriminate l =
 	for i = 0 to 63 do
 	  if data.(env.(i)) then res := Int64.logor !res (Int64.shift_left 1L i)
 	done;
-	assert(Eval.eval t1 !res <> Eval.eval t2 !res);
-	Some !res
+	if Eval.eval t1 !res = Eval.eval t2 !res then
+	  begin
+	    Printf.printf "===== WARNING =====\n";
+	    Printf.printf "Problem in SAT encoding : wrong discriminator\n";
+	    None
+	  end
+	else
+	  Some !res
     | _ -> None)
     pbs res

@@ -124,7 +124,7 @@ let train_online () =
   let open Protocol.Training in 
   match Net.send_training ({
     Request.size = Some !Config.problem_size;
-    Request.operators = Some []
+    Request.operators = Some ["tfold"]
   })
   with
   | `Training_body pb ->

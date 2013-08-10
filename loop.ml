@@ -77,6 +77,38 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     (* Array.iteri (fun i x -> Printf.printf "%i %s\n" i (Int64.to_string x)) r; *)
     r
 
+  exception Found of int
+
+  (* find values that discriminate using sat solving *)
+  let best_sat p =
+    let keys = ref [] in
+    for j = 0 to 10 do
+      let get_nth k =
+	let cur = ref 0 in
+	try
+	  Bitv.iteri_true (fun i -> if !cur = k then raise (Found i) else incr cur) p;
+	  assert false
+	with Found i -> terms.(i)
+      in
+      let pairs = ref [] in
+      let n = size p in
+      for i = 0 to 6 do (* Increase 6 to whatever if there are many cores *)
+	pairs := (get_nth (Random.int n), get_nth (Random.int n)) :: !pairs
+      done;
+      keys := (Sat.discriminate !pairs) @ !keys
+    done;
+    let keys = List.sort compare !keys in
+    let rec uniq = function
+      | [] -> []
+      | None::q -> uniq q
+      | t::t'::q when t=t' -> uniq (t'::q)
+      | Some t::q -> t::uniq q
+    in
+    let keys = uniq keys in
+    Printf.printf "Found %d new discriminants by SAT\n" (List.length keys);
+    Array.init 256 (fun i ->
+      if i < List.length keys then List.nth keys i else rnd64 ())
+
   (* if we cannot find values that would make progress, we have to make a guess. *)
     
   let all_equiv p =
@@ -122,7 +154,6 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     refine p [|v|] [|a|] 
 
 
-  exception Found of int
   let choose p = 
     try
       Bitv.iteri_true (fun i -> raise (Found i)) p;
@@ -159,34 +190,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       Printf.printf "refined: %b\n" refined;
       iloop p (Xlog.logv log keys values)
     | "a" -> 				(* with sat *)
-      let keys = ref [] in
-      for j = 0 to 10 do
-	let get_nth k =
-	  let cur = ref 0 in
-	  try
-	    Bitv.iteri_true (fun i -> if !cur = k then raise (Found i) else incr cur) p;
-	    assert false
-	  with Found i -> terms.(i)
-	in
-	let pairs = ref [] in
-	let n = size p in
-	for i = 0 to 6 do (* Increase 6 to whatever if there are many cores *)
-	  pairs := (get_nth (Random.int n), get_nth (Random.int n)) :: !pairs
-	done;
-	keys := (Sat.discriminate !pairs) @ !keys
-      done;
-      let keys = List.sort compare !keys in
-      let rec uniq = function
-	| [] -> []
-	| None::q -> uniq q
-	| t::t'::q when t=t' -> uniq (t'::q)
-	| Some t::q -> t::uniq q
-      in
-      let keys = uniq keys in
-      Printf.printf "Found %d new discriminants by SAT\n" (List.length keys);
-      let keys = Array.init 256 (fun i ->
-	if i < List.length keys then List.nth keys i else rnd64 ())
-      in
+      let keys = best_sat p in
       let values = O.eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
@@ -236,11 +240,15 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
         print_newline ();
         ()
 
-  let rec loop round p = 
-    let keys = if round < 5 then  Array.init 256 (fun _ -> rnd64 ()) else best p in 
+  let rec loop round p =
+    let oldsize = size p in
+    let keys =
+      if round < 2 then  Array.init 256 (fun _ -> rnd64 ())
+      else best_sat p in 
     let values = O.eval keys in 
-    let refined,p = refine p keys values in 
-    if size p = 1 || not refined
+    let refined,p = refine p keys values in
+    let cursize = size p in
+    if cursize = 1 || oldsize-cursize <= oldsize/5
     then 
       begin 
 	let candidate = choose p in
