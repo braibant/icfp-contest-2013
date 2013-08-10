@@ -78,10 +78,8 @@ type problem_data = {
 let problem_data p = {
   id = p.Protocol.Problem.Response.id;
   operators =
-    (* we must double-check the semantics of 'operators' in the protocol *)
-    Generator.all_ops;
-    (* Generator.ops_from_list *)
-    (*   (List.map Term.op_of_string p.Protocol.Problem.Response.operators); *)
+    Generator.ops_from_list
+      (List.map Term.op_of_string p.Protocol.Problem.Response.operators);
   size = p.Protocol.Problem.Response.size;
 }
 
