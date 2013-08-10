@@ -142,24 +142,27 @@ module Notations = struct
   let op2 op x y = HC.hashcons (Op2 (op, x, y, -1))
     
   (* unop *)
-  let compose_op1 op ops =
+  let rec compose_op1 op ops =
     match op, ops with
     | Not, Not::q -> q
     | Shr1, Shr1 :: Shr1 :: Shr1 :: q -> Shr4 ::q
     | Shr4, Shr4 :: Shr4 :: Shr4 :: q -> Shr16 ::q
+    | Shr4, Shr1 :: q -> compose_op1 Shr1 (compose_op1 Shr4 q)
+    | Shr16, Shr1 :: q -> compose_op1 Shr1 (compose_op1 Shr16 q)
+    | Shr16, Shr4 :: q -> compose_op1 Shr4 (compose_op1 Shr16 q)
     | _, _ -> op :: ops
     
   let op1 op x = 
-    (* match op,x with *)
-    (* | _, Op1 (ops,t,_) -> *)
-    (*   let ops = compose_op1 op ops in *)
-    (*   if ops = [] then t else *)
-    (*   HC.hashcons (Op1 (ops, t, -1)) *)
-    (* | Shr1, C0 | Shr1, C1 -> c0 *)
-    (* | Shr4, C0 | Shr4, C1 -> c0 *)
-    (* | Shr16, C0 | Shr16, C1 -> c0 *)
-    (* | Shl1, C0 -> c0 *)
-    (* | _, x -> *) HC.hashcons (Op1 ([op],x, -1))
+    match op,x with
+    | _, Op1 (ops,t,_) ->
+      let ops = compose_op1 op ops in
+      if ops = [] then t else
+      HC.hashcons (Op1 (ops, t, -1))
+    | Shr1, C0 | Shr1, C1 -> c0
+    | Shr4, C0 | Shr4, C1 -> c0
+    | Shr16, C0 | Shr16, C1 -> c0
+    | Shl1, C0 -> c0
+    | _, x -> HC.hashcons (Op1 ([op],x, -1))
      
   let (~~) x = op1 Not x 
   let shl1 x = op1 Shl1 x
