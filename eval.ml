@@ -39,7 +39,8 @@ let rec ho_evalv sigma args env =
       Array.init (Array.length a) (fun i ->
 	if a.(i) = 0L then b.(i) else c.(i)
       ) 
-    | Hole (n,false) -> sigma.(n)
+    | Hole (n,false) -> 
+      (try sigma.(n) with _ -> failwith (Printf.sprintf "sigma %i %i" (Array.length sigma) n))
     | Hole (n,_) -> assert false 
     | Fold (e0,e1,e2,_) -> 
       let e0 = ref (aux e0) in 
@@ -63,8 +64,8 @@ let h_evalv p sigma args =
   env.(0) <- args;
   ho_evalv sigma args env p
 
-(* let evalv p args =  *)
-(*   h_evalv p [||] args  *)
+let evalv p args =
+  h_evalv p [||] args
 
     
 
@@ -74,7 +75,7 @@ let eval =
     | C0 -> 0L
     | C1 -> 1L
     | Var id -> env.(id)
-    | Hole _ -> assert false 
+    | Hole _ -> 0L
     | If0 (e1,e2,e3,_) -> if eval  e1 = 0L then eval  e2 else eval  e3
     | Op1 ([], _,_) -> assert false
     | Op1 (op::ops,e,_) -> let e = eval (Term.__op1 ops e) in 
@@ -112,4 +113,4 @@ let eval =
   fun p x -> env.(Constants.arg) <- x; eval p
 ;;
 
-let evalv p v = Array.map (eval p) v;;
+(* let evalv p v = Array.map (eval p) v;; *)

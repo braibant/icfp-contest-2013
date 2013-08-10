@@ -104,13 +104,13 @@ let holes x =
   let (+) = max in 
   let rec aux = function
     | C0 | C1 | Var _ -> min_int 
-    | Hole (n,_) -> n + 1
+    | Hole (n,_) -> n
     | If0 (e,f,g,_) -> aux e + aux f + aux g
     | Fold (e,f,g, _) -> aux e + aux f + aux g
     | Op1 (_, e, _) -> aux e
     | Op2 (_, e, f, _) -> aux e + aux f
     | Cst (_, _, _) -> min_int
-  in aux x
+  in succ (aux x)
 
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 
@@ -185,7 +185,7 @@ let __op1 ops x =
 let subst_holes sigma t =
   let rec aux = function
     | C0 | C1 | Var _ as e-> e
-    | Hole (n,_) -> sigma.(n)
+    | Hole (n,_) -> (try sigma.(n) with _ -> Printf.printf "sigma : %i hole : %i" (Array.length sigma) n; assert false)
     | If0 (c,f,g,_) -> Notations.if0 (aux c) (aux f) (aux g)
     | Fold (c,f,g, _) -> Notations.fold (aux c) (aux f) (aux g)
     | Op1 (o , e, _) -> HC.hashcons (Op1 (o,aux e,-1)) (* todo etre plus malin et fusionner les listes *)
@@ -193,7 +193,19 @@ let subst_holes sigma t =
     | Cst (_, _, _) as e -> e
   in aux t
 
-
+let renumber_holes t =
+  let next = ref 0 in 
+  let rec aux = function
+  | C0 | C1 | Var _ as e-> e
+  | Hole (_,b) -> let n = !next in incr next; Notations.hole n b
+  | If0 (c,f,g,_) -> Notations.if0 (aux c) (aux f) (aux g)
+  | Fold (c,f,g, _) -> Notations.fold (aux c) (aux f) (aux g)
+  | Op1 (o , e, _) -> HC.hashcons (Op1 (o,aux e,-1)) (* todo etre plus malin et fusionner les listes *)
+  | Op2 (o , e, f, _) -> Notations.op2 o (aux e) (aux f)
+  | Cst (_, _, _) as e -> e
+  in 
+aux t
+    
 (** Reified representation of operators *)
 type op =
 | If0o

@@ -12,7 +12,7 @@ type sexp =
 | List of sexp list
 
 let rec sexp_exp = function
-  | Hole _ -> Word "[]"
+  | Hole (n,_) -> Word (Printf.sprintf "[%i]" n)
   | C0 -> Word "0"
   | C1 -> Word "1"
   | Var x -> Word (string_of_id x)
