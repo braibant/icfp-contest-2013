@@ -69,6 +69,40 @@ struct
   let reveal () = X.secret
 end
 
+(** real world play *)
+type problem_data = {
+  id : string;
+  operators : Generator.OSet.t;
+  size : int;
+  tfold : bool;
+}
+
+let problem_data p = {
+  id = p.Protocol.Problem.Response.id;
+  operators =
+    (* we must double-check the semantics of 'operators' in the protocol *)
+    Generator.all_ops;
+    (* Generator.ops_from_list *)
+    (*   (List.map Term.op_of_string p.Protocol.Problem.Response.operators); *)
+  size = p.Protocol.Problem.Response.size;
+  tfold = List.mem "tfold" p.Protocol.Problem.Response.operators
+}
+
+let play_online problem secret =
+  let module Oracle = OnlineOracle(struct
+    let id = problem.id
+    let secret = secret
+  end) in
+  let module Params = struct
+    let n = problem.size
+    let ops = problem.operators
+    let tfold = problem.tfold
+  end in
+  let module Loop = Loop.FState(Params)(Oracle) in
+  if !Config.interactive_mode 
+  then Loop.iloop ()
+  else Loop.loop ()
+
 (* this is the main handler for training problems.  *)
 let train_online () =
   let open Protocol.Training in 
@@ -81,41 +115,15 @@ let train_online () =
     let secret = Parser.prog_of_string (pb.Response.challenge) in 
     Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
     Print.print_exp_nl secret;
-    let module Oracle = OnlineOracle(struct
-      let id= pb.Response.id
-      let secret = Some secret
-    end) in
-    let module Params = struct
-      let n = Term.size secret
-      let ops = Generator.operators secret
-      let tfold = List.mem "tfold" pb.Response.operators
-    end in 
-    let module Loop = Loop.FState(Params)(Oracle) in 
-    if !Config.interactive_mode 
-    then Loop.iloop ()
-    else Loop.loop ()
+    let problem = {
+      id = pb.Response.id;
+      size = Term.size secret;
+      operators = Generator.operators secret;
+      tfold = List.mem "tfold" pb.Response.operators
+    } in
+    play_online problem (Some secret)
   | #Net.unexpected as other ->
     invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
-
-(** real world play *)
-
-let play_online problem =
-  let open Protocol.Problem.Response in
-  let module Oracle = OnlineOracle(struct
-    let id = problem.id
-    let secret = None
-  end) in
-  let module Params = struct
-    let n = problem.size
-    let ops =
-      Generator.ops_from_list
-        (List.map Term.op_of_string problem.operators)
-    let tfold = List.mem "tfold" problem.operators
-  end in
-  let module Loop = Loop.FState(Params)(Oracle) in
-  if !Config.interactive_mode 
-  then Loop.iloop ()
-  else Loop.loop ()
 
 (** manipulating the problem list *)
 
@@ -123,6 +131,15 @@ let problems = lazy begin
   let json = Yojson.Basic.from_file !Config.problems_file in
   Yojson.Basic.Util.convert_each Protocol_json.problem_of_json json
 end
+
+let unsolved_problems = lazy begin
+  let open Protocol.Problem.Response in
+  List.filter (fun prob -> prob.solved = None) (Lazy.force problems)
+end
+
+let problem_difficulty prob =
+  let open Protocol.Problem.Response in
+  float (List.length prob.operators) ** float prob.size
 
 let problem_of_id id =
   let open Protocol.Problem.Response in
@@ -155,8 +172,30 @@ let show_problem id =
   with Not_found ->
     Printf.eprintf "No problem with id %s.\n%!" id
 
+let list_problems () =
+  if not !Config.sync_problem_list then sync_problem_list ();
+  let rec take n = function
+    | [] -> []
+    | hd::tl -> if n = 0 then [] else hd :: take (n - 1) tl in
+  let problems_sorted =
+    List.sort (fun pa pb ->
+      compare (problem_difficulty pa) (problem_difficulty pb))
+      (Lazy.force unsolved_problems)
+  in
+  let easy = take 10 problems_sorted in
+  print_endline "10 easy problems:";
+  List.iter print_problem easy;
+  print_newline ()
 
-let list_problems () = failwith "not implemented yet"
+
+let show_status () =
+  match Net.send_status_raw () with
+    | `Status_json json ->
+      Yojson.Basic.pretty_to_channel stdout json;
+      print_newline ();
+      ()
+    | #Net.unexpected as other ->
+      invalid_arg (Printf.sprintf "status: %s" (Net.str_of_return other))
 
 (** Setting up usage *)
 
@@ -165,6 +204,11 @@ let _ =
      please don't use observable global effect outside it *)
   if not !Sys.interactive then begin
     Arg.parse Config.args (fun rest -> ()) "ICFP contest 2013 prototype";
+
+    if !Config.show_status then begin
+      show_status ();
+      exit 0;
+    end;
 
     if !Config.sync_problem_list then sync_problem_list ();
     begin match !Config.show_problem with
@@ -197,7 +241,7 @@ let _ =
             print_problem prob;
             print_endline "Confirm? y/n";
             begin match read_line () with
-              | "y" -> play_online prob
+              | "y" -> play_online (problem_data prob) None
               | "n" -> ()
               | other ->
                 Printf.printf "unknown answer %S, aborting.\n%!" other
