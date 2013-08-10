@@ -23,8 +23,7 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
   let reveal () = Some secret
 end
 
-let train_offline () =
-  let secret = Example.random !Config.problem_size in
+let play_offline secret =
   Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
   let module Oracle = OfflineOracle(struct let secret = secret end) in
   let module Params = struct
@@ -37,6 +36,9 @@ let train_offline () =
   then Loop.iloop ()
   else Loop.loop ()
 
+let train_offline () =
+  let secret = Example.random !Config.problem_size in
+  play_offline secret
 
 (** Online training, on the server *)
 module OnlineOracle(X: sig val id : string val secret : Term.exp option end) =
@@ -134,7 +136,9 @@ let train_online () =
 let train_serialized () =
   let json = Utils.read_json_from_file !Config.last_training_file in
   let pb = Protocol_json.training_of_json json in
-  play_training pb
+  let secret =
+    Parser.prog_of_string pb.Protocol.Training.Response.challenge in
+  play_offline secret
 
 (** manipulating the problem list *)
 
