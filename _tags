@@ -1,2 +1,4 @@
-true: package(pprint), package(bitv), package(yojson), package(netclient), package(camlp4.extend), package(camlp4.gramlib)
+true: package(unix), package(pprint), package(bitv)
+true: package(yojson), package(netclient)
+true: package(camlp4.extend), package(camlp4.gramlib)
 <parser.*>: syntax(camlp4o)

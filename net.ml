@@ -24,19 +24,41 @@ let json_body name call =
 let unknown_code name n =
   failwith (Printf.sprintf "call %S: unknown status code %d" name n)
 
+let pause_time = 5
+
+let beginning str =
+  let limit = 200 in
+  if String.length str <= limit then str
+  else begin
+    let cut = String.sub str 0 limit in
+    String.blit "..." 0 cut (limit-1-3) 3;
+    cut
+  end
+
 let handle name body =
-  let call = new post_raw (addr name) body in
-  match (response call) # response_status_code with
-    | 400 -> `Bad_request
-    | 401 -> `Unauthorized
-    | 403 -> `Authorization_required
-    | 404 -> `Not_found
-    | 410 -> `Gone
-    | 412 -> `Already_solved
-    | 413 -> `Request_too_big
-    | 429 -> `Try_again_later
-    | 200 -> `Body (json_body name call)
-    | n -> `Unknown_code n
+  let rec loop = function
+    | 0 -> `Try_again_later
+    | n ->
+      let call = new post_raw (addr name) body in
+      match (response call) # response_status_code with
+        | 400 -> `Bad_request
+        | 401 -> `Unauthorized
+        | 403 -> `Authorization_required
+        | 404 -> `Not_found
+        | 410 -> `Gone
+        | 412 -> `Already_solved
+        | 413 -> `Request_too_big
+        | 200 -> `Body (json_body name call)
+        | 429 ->
+          Printf.eprintf
+            "Call %s got a 'Try Again Later' for input\n%s\n%d second pause.\n%!"
+            name
+            (beginning body)
+            pause_time;
+          Unix.sleep pause_time;
+          loop (n - 1);
+        | n -> `Unknown_code n
+  in loop 3
 
 type unexpected = [
 | `Bad_request
