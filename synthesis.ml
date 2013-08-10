@@ -96,6 +96,7 @@ let main sizeC sizeT sizeE ops  =
   (* contexts *)
   let contexts = (Generator.generate_context sizeE ops ([Term.Notations.hole 0 false])) in 
   Printf.printf "contexts: %i\n%!" (List.length contexts);
+  List.iter Print.print_exp_nl contexts;
   synthesis constants terms (contexts)  
  
 

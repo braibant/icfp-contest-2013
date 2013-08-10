@@ -213,6 +213,11 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     | "c" ->
       Printf.printf "all_equiv:%b\n" (all_equiv p);
       iloop p log
+    | "?" ->
+      Printf.printf "all initial terms\n";
+      Array.iter Print.print_exp_nl terms;
+      iloop p log
+
     | _ ->
       iloop p log
 	

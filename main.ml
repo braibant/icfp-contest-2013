@@ -103,9 +103,12 @@ let play_online problem secret =
 
 let play_training pb =
   let open Protocol.Training in 
-  let secret = Parser.prog_of_string (pb.Response.challenge) in 
-  Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
-  Print.print_exp_nl secret;
+    let secret = Parser.prog_of_string (pb.Response.challenge) in 
+    Printf.printf "size of the secret:%i\n%!" (Term.size secret);
+    Printf.printf "id of the secret:%s\n%!" (pb.Response.id);
+    Printf.printf "secret:%s\n%!" (pb.Response.challenge);
+    Print.print_exp_nl secret;
+
   let problem = {
     id = pb.Response.id;
     size = Term.size secret;

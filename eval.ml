@@ -15,7 +15,8 @@ let rec ho_evalv sigma args env =
     | C1 -> Vect.one 
     | Cst (i,_,_) -> Vect.mk i
     | Var id -> env.(id)
-    | Op1 (op,e,_) -> let e = aux  e in 
+    | Op1 ([], _,_) -> assert false
+    | Op1 (op::q,e,_) -> let e = aux (Term.__op1 q e) in 
 		    begin match op with 
 		    | Not -> Array.map lognot e
 		    | Shl1 -> Array.map (fun e -> shift_left e 1) e
@@ -75,7 +76,8 @@ let eval =
     | Var id -> env.(id)
     | Hole _ -> assert false 
     | If0 (e1,e2,e3,_) -> if eval  e1 = 0L then eval  e2 else eval  e3
-    | Op1 (op,e,_) -> let e = eval  e in 
+    | Op1 ([], _,_) -> assert false
+    | Op1 (op::ops,e,_) -> let e = eval (Term.__op1 ops e) in 
 		      begin match op with 
 		      | Not -> lognot e
 		      | Shl1 -> shift_left e 1
