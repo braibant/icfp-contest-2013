@@ -163,6 +163,7 @@ let subst_holes sigma t =
     | Cst (_, _, _) as e -> e
   in aux t
 
+
 (** Reified representation of operators *)
 type op =
 | If0o

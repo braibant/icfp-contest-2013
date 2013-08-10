@@ -93,6 +93,12 @@ let send_myproblems () =
         Yojson.Basic.Util.convert_each Protocol_json.problem_of_json json in
       `Problem_body problems
 
+let send_myproblems_raw () =
+  let name = name `Problem in
+  match handle name "" with
+    | #unexpected as ret -> ret
+    | `Body json -> `Problem_json json
+
 let send_eval request =
   let name = name `Eval in
   let body = Yojson.Basic.to_string (Protocol_json.json_of_eval request) in

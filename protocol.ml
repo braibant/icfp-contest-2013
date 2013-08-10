@@ -17,7 +17,8 @@ module Problem = struct
   end
 
   module Response = struct
-    type response = {
+    type response = { 
+      json: Yojson.Basic.json;
       id: string;
       (** a problem ID corresponding to some program P *)
       size: int;

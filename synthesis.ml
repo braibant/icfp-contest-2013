@@ -11,7 +11,7 @@ module Context = struct
   let eval = Eval.h_evalv
 
   let fit space src (tgt: Vect.t) c : Vect.t array list  =
-    let n = Term.holes c in 
+    let n = max 0 (Term.holes c) in 
     let sigma = Array.create n Vect.zero in
     let rec aux i space acc =
       if i = n then 
@@ -84,14 +84,18 @@ let synthesis
   in 
   process l []
 
-let main sizeC sizeT sizeE ops keys values =
+let main sizeC sizeT sizeE ops  =
+  Printf.printf "synthesis: c %i t %i e %i\n%!" sizeC sizeT sizeE;
   let constants = Generator.generate_constants_witness sizeC ops in
   let constants = 
     List.fold_right (fun (t,c) acc -> IMap.add c t acc) constants IMap.empty in
+  Printf.printf "constants: %i\n%!" (IMap.cardinal constants);
   (* terms *)
   let terms = Array.of_list (Generator.generate ~force_fold:false sizeT ~exact:false ops) in
+  Printf.printf "terms: %i\n%!" (Array.length terms);
   (* contexts *)
   let contexts = (Generator.generate_context sizeE ops ([Term.Notations.hole 0 false])) in 
-    synthesis constants terms (contexts) 
+  Printf.printf "contexts: %i\n%!" (List.length contexts);
+  synthesis constants terms (contexts)  
  
 

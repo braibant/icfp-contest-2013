@@ -95,7 +95,7 @@ let train_online () =
   | #Net.unexpected as other ->
     invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
 
-(* real world play *)
+(** real world play *)
 
 let play_online problem =
   let open Protocol.Problem.Response in
@@ -114,14 +114,43 @@ let play_online problem =
   then Loop.iloop ()
   else Loop.loop ()
 
+(** manipulating the problem list *)
+
 let problems = lazy begin
-  let json = Yojson.Basic.from_file "problems" in
+  let json = Yojson.Basic.from_file !Config.problems_file in
   Yojson.Basic.Util.convert_each Protocol_json.problem_of_json json
 end
 
 let problem_of_id id =
   let open Protocol.Problem.Response in
   List.find (fun prob -> prob.id = id) (Lazy.force problems)
+
+let sync_problem_list () =
+  Printf.printf "Syncing problem list\n%!";
+  match Net.send_myproblems_raw () with
+    | #Net.unexpected as error ->
+      Printf.eprintf "sync_problem_list net error: %s.\n%!"
+        (Net.str_of_return error)
+    | `Problem_json json ->
+      try
+        Yojson.Basic.to_file ~std:true !Config.problems_file json;
+        Printf.printf "Problem list synced\n%!";
+      with exn ->
+        Printf.eprintf "sync_problem_list sys error: %s.\n%!"
+          (Printexc.to_string exn)
+
+let show_problem id =
+  Printf.printf "Showing problem %s.\n%!" id;
+  try
+    let problem = problem_of_id id in
+    Yojson.Basic.pretty_to_channel stdout
+      problem.Protocol.Problem.Response.json;
+    print_newline ()
+  with Not_found ->
+    Printf.eprintf "No problem with id %s.\n%!" id
+
+
+let list_problems () = failwith "not implemented yet"
 
 (** Setting up usage *)
 
@@ -130,6 +159,16 @@ let _ =
      please don't use observable global effect outside it *)
   if not !Sys.interactive then begin
     Arg.parse Config.args (fun rest -> ()) "ICFP contest 2013 prototype";
+
+    if !Config.sync_problem_list then sync_problem_list ();
+    begin match !Config.show_problem with
+      | None -> ()
+      | Some id -> show_problem id
+    end;
+    if !Config.list_problems then list_problems ();
+
+    print_newline ();
+
     match !Config.source with
       | None ->
         Print.print PPrint.(flow (break 1) (words

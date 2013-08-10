@@ -5,6 +5,7 @@ let interactive_mode = ref false
 let problem_size = ref 4
 
 let solved_file = ref "solved_problems"
+let problems_file = ref "problems"
 
 type source =
 | Train_offline
@@ -16,9 +17,19 @@ let source = ref None
 let set_source s () =
   source := Some s
 
+let sync_problem_list = ref false
+let show_problem = ref None
+let list_problems = ref false
+
 let args = 
   let open Arg in 
   align [
+    "--sync-problem-list", Set sync_problem_list,
+    " synchronize the 'problems' file with our current state of resolution";
+    "--show-problem", String (fun id -> show_problem := Some id),
+    "ID show the problem status for the given id";
+    "--list-problems", Set list_problems,
+    " list available problems, easiest first; if --problem-size is set, filter on it.";
     "--train-offline", Unit (set_source Train_offline),
     " play offline with a randomly-generated term";
     "--train-online", Unit (set_source Train_online),

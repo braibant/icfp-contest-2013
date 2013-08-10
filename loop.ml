@@ -16,10 +16,20 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
   (* a bitvector representation of a set of the possible programs *)
   type t = Bitv.t 
 
-  let terms = Array.of_list (Generator.generate ~force_fold:false n ops)
+  let terms =
+    Printf.printf "Computing terms\n%!";
+    if n < 8 then
+      Array.of_list (Generator.generate ~force_fold:false n ops)
+    else 
+      let keys = Array.init 256 (fun _ -> rnd64 ()) in 
+      let values = O.eval keys in 
+      let v = Array.of_list (Synthesis.main 8 8 (n - 7) ops keys values) in 
+      Printf.printf "synthesis generated %i terms\n" (Array.length v);
+      v
   (* let _ = *)
   (*   let (a, b, c, d, e, f) = Term.HC.stats () in *)
   (*   Printf.printf "%d %d %d %d %d %d\n" a b c d e f *)
+
   let init = Bitv.create (Array.length terms) true
 
   let print (p:t)=
@@ -243,4 +253,5 @@ module FState(X:sig val n : int val ops: Generator.OSet.t end)(O: ORACLE) = stru
     print_newline ()
 
 end
+
 
