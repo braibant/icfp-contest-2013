@@ -29,7 +29,7 @@ let args =
     "--show-problem", String (fun id -> show_problem := Some id),
     "ID show the problem status for the given id";
     "--list-problems", Set list_problems,
-    " list available problems, easiest first; if --problem-size is set, filter on it.";
+    " list some available problems, easiest first";
     "--train-offline", Unit (set_source Train_offline),
     " play offline with a randomly-generated term";
     "--train-online", Unit (set_source Train_online),

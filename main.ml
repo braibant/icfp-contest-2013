@@ -121,6 +121,15 @@ let problems = lazy begin
   Yojson.Basic.Util.convert_each Protocol_json.problem_of_json json
 end
 
+let unsolved_problems = lazy begin
+  let open Protocol.Problem.Response in
+  List.filter (fun prob -> prob.solved = None) (Lazy.force problems)
+end
+
+let problem_difficulty prob =
+  let open Protocol.Problem.Response in
+  float (List.length prob.operators) ** float prob.size
+
 let problem_of_id id =
   let open Protocol.Problem.Response in
   List.find (fun prob -> prob.id = id) (Lazy.force problems)
@@ -152,8 +161,20 @@ let show_problem id =
   with Not_found ->
     Printf.eprintf "No problem with id %s.\n%!" id
 
-
-let list_problems () = failwith "not implemented yet"
+let list_problems () =
+  if not !Config.sync_problem_list then sync_problem_list ();
+  let rec take n = function
+    | [] -> []
+    | hd::tl -> if n = 0 then [] else hd :: take (n - 1) tl in
+  let problems_sorted =
+    List.sort (fun pa pb ->
+      compare (problem_difficulty pa) (problem_difficulty pb))
+      (Lazy.force unsolved_problems)
+  in
+  let easy = take 10 problems_sorted in
+  print_endline "10 easy problems:";
+  List.iter print_problem easy;
+  print_newline ()
 
 (** Setting up usage *)
 
