@@ -43,7 +43,10 @@ module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
     let open Protocol.Eval in 
     match Net.send_eval (Request.({name = `Id X.id; arguments = v})) with 
     | `Eval_body (`Ok r) -> r
-    | _ -> invalid_arg "eval"
+    | `Eval_body (`Error error) ->
+      invalid_arg (Printf.sprintf "eval error: %s" error)
+    | #Net.unexpected as other ->
+      invalid_arg (Printf.sprintf "eval: %s" (Net.str_of_return other))
 
   let guess t =
     let program =  Print.print_program t in 
@@ -53,7 +56,8 @@ module OnlineOracle(X: sig val id : string val secret : Term.exp end) = struct
       | `Guess_body {Response.status=`Mismatch m} -> Loop.Discr (m.Response.input, m.Response.challenge_result )
       | `Guess_body {Response.status=`Error msg} ->
 	failwith (Printf.sprintf "guess: received error message from server\nmsg: %s\nprogram:%s\n" msg program)
-      | _ -> invalid_arg "guess"
+      | #Net.unexpected as other ->
+        invalid_arg (Printf.sprintf "guess: %s" (Net.str_of_return other))
 
   let reveal () = Some X.secret
 end
@@ -83,8 +87,8 @@ let train_online () =
     if !Config.interactive_mode 
     then Loop.iloop ()
     else Loop.loop ()
-  | _ -> assert false 
-
+  | #Net.unexpected as other ->
+    invalid_arg (Printf.sprintf "train: %s" (Net.str_of_return other))
 
 (** Setting up usage *)
 
