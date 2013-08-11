@@ -94,12 +94,12 @@ let synthesis
   
 let generate sizeT sizeE ops =
   Printf.printf "synthesis:  t %i e %i\n%!" sizeT sizeE;
-  let terms = Array.of_list (Generator.generate ~force_fold:false sizeT ~exact:false ops) in
+  let terms = Generator.generate ~force_fold:false sizeT ~exact:false ops in
   Printf.printf "terms: %i\n%!" (Array.length terms);
-  let contexts = (Generator.generate_context sizeE ops ([Term.Notations.hole 0 false])) in
-  Printf.printf "contexts: %i\n%!" (List.length contexts);
+  let contexts = Generator.generate_context sizeE ops ([Term.Notations.hole 0 false]) in
+  Printf.printf "contexts: %i\n%!" (Array.length contexts);
   let queue = Queue.create () in
-  List.iter (fun elt -> Queue.add elt queue) contexts;
+  Array.iter (fun elt -> Queue.add elt queue) contexts;
   {terms; contexts= queue; map = ref None}
   
 

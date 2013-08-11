@@ -32,15 +32,14 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
       if (n < 8 || tfold) || not !Config.synthesis then
-	Array.of_list 
-	  (if tfold then Generator.generate_tfold n ops
-	   else Generator.generate n ops)
+	if tfold then Generator.generate_tfold n ops
+	else Generator.generate n ops
       else
-      let keys = Array.init 256 (fun _ -> rnd64 ()) in 
-      let values = O.eval keys in 
-      let v = Array.of_list (Synthesis.synthesis (get_env ()) keys values) in 
-      Printf.printf "synthesis generated %i terms\n" (Array.length v);
-      v
+	let keys = Array.init 256 (fun _ -> rnd64 ()) in 
+	let values = O.eval keys in 
+	let v = Array.of_list (Synthesis.synthesis (get_env ()) keys values) in 
+	Printf.printf "synthesis generated %i terms\n" (Array.length v);
+	v
     end 
     in
     let sieve = Bitv.create (Array.length terms) true in

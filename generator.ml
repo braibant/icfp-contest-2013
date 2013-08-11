@@ -75,9 +75,9 @@ let generate, generate_tfold, generate_novar,generate_context =
     let ops = OSet.remove Foldo ops in
     let memo = Array.make_matrix size 3 None in
     let () =
-      memo.(0).(0) <- Some [];
-      memo.(0).(1) <- Some (Notations.(mk_facc::mk_farg::atoms));
-      memo.(0).(2) <- Some atoms
+      memo.(0).(0) <- Some [| |];
+      memo.(0).(1) <- Some (Array.of_list (Notations.(mk_facc::mk_farg::atoms)));
+      memo.(0).(2) <- Some (Array.of_list atoms)
     in
     let rec aux size fold_state =
       let fold_state_int =
@@ -86,153 +86,128 @@ let generate, generate_tfold, generate_novar,generate_context =
       if memo.(size-1).(fold_state_int) = None then
 	begin
 	  assert (size > 1);
-	  let res =
-	    let acc =
-	      if fold_state = Required then
-		begin
-		  let acc = ref [] in
-		  for i = 1 to size-4 do
-		    for j = 1 to size-3-i do
-		      let gen1 = aux i Forbidden in
-		      let gen2 = aux j Forbidden in
-		      let gen3 = aux (size-2-i-j) Inside in
-		      acc:=
-			List.fold_left (fun acc x ->
-			  List.fold_left (fun acc y ->
-			    List.fold_left (fun acc z -> Notations.fold x y z::acc) acc gen3)
-			    acc gen2)
-			  !acc gen1
-		    done;
-		  done;
-		  !acc
-		end
-	      else []
-	    in
+	  let htbl = Term.H.create 100_000 in
+	  let add x = Term.H.replace htbl (simpl x) () in
 
-	    OSet.fold (fun op acc ->
-	      match op with
-	      | Op1o op ->
-		  List.fold_left
-		    (fun acc x -> Notations.op1 op x::acc)
-		    acc
-		    (aux (size-1) fold_state)
-	      | Op2o op ->
-		  if fold_state = Required then
-		    begin
-		      let acc = ref acc in
-		      for i = 5 to size-2 do
-			let genl = aux i Required in
-			let genr = aux (size-1-i) Forbidden in
-			acc:=
-			  List.fold_left (fun acc x ->
-			    List.fold_left (fun acc y -> Notations.op2  op x y::acc)
-			      acc genr)
-			    !acc genl
-		      done;
-		      !acc
-		    end
-		  else
-		    begin
-		      let acc = ref acc in
-		      for i = 1 to (size-1)/2 do
-			let genl = aux i fold_state in
-			let genr = aux (size-1-i) fold_state in
-			acc:=
-			  List.fold_left (fun acc x ->
-			    List.fold_left (fun acc y ->
-			      if i = size-1-i && get_exp_id y < get_exp_id x then acc
-			      else Notations.op2 op x y::acc)
-			      acc genr)
-			    !acc genl
-		      done;
-		      !acc
-		    end
-	      | If0o ->
-		  if fold_state = Required then
-		    begin
-		      let acc = ref acc in
-		      for i = 5 to size-3 do
-			for j = 1 to size-2-i do
-			  let gen1 = aux i Required in
-			  let gen2 = aux j Forbidden in
-			  let gen3 = aux (size-1-i-j) Forbidden in
-			  acc:=
-			    List.fold_left (fun acc x ->
-			      List.fold_left (fun acc y ->
-				List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
-				acc gen2)
-			      !acc gen1
-			done;
-		      done;
-		      for i = 1 to size-7 do
-			for j = 5 to size-2-i do
-			  let gen1 = aux i Forbidden in
-			  let gen2 = aux j Required in
-			  let gen3 = aux (size-1-i-j) Forbidden in
-			  acc:=
-			    List.fold_left (fun acc x ->
-			      List.fold_left (fun acc y ->
-				List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
-				acc gen2)
-			      !acc gen1
-			done;
-		      done;
-		      for i = 1 to size-7 do
-			for j = 1 to size-6-i do
-			  let gen1 = aux i Forbidden in
-			  let gen2 = aux j Forbidden in
-			  let gen3 = aux (size-1-i-j) Required in
-			  acc:=
-			    List.fold_left (fun acc x ->
-			      List.fold_left (fun acc y ->
-				List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
-				acc gen2)
-			      !acc gen1
-			done;
-		      done;
-		      !acc
-		    end
-		  else
-		    let acc = ref acc in
-		    for i = 1 to size-3 do
+	  if fold_state = Required then
+	    for i = 1 to size-4 do
+	      for j = 1 to size-3-i do
+		let gen1 = aux i Forbidden in
+		let gen2 = aux j Forbidden in
+		let gen3 = aux (size-2-i-j) Inside in
+		Array.iter (fun x ->
+		  Array.iter (fun y ->
+		    Array.iter (fun z -> add (Notations.fold x y z)) gen3)
+		    gen2)
+		  gen1
+	      done;
+	    done;
+
+	  OSet.iter (fun op ->
+	    match op with
+	    | Op1o op ->
+		Array.iter
+		  (fun x -> add (Notations.op1 op x))
+		  (aux (size-1) fold_state)
+	    | Op2o op ->
+		if fold_state = Required then
+		  for i = 5 to size-2 do
+		    let genl = aux i Required in
+		    let genr = aux (size-1-i) Forbidden in
+		    Array.iter (fun x ->
+		      Array.iter (fun y -> add (Notations.op2  op x y))
+			genr)
+		      genl
+		  done
+		else
+		  for i = 1 to (size-1)/2 do
+		    let genl = aux i fold_state in
+		    let genr = aux (size-1-i) fold_state in
+		    Array.iter (fun x ->
+		      Array.iter (fun y ->
+			if i < size-1-i || get_exp_id x <= get_exp_id y then
+			  add (Notations.op2 op x y))
+			genr)
+		      genl
+		  done
+	    | If0o ->
+		if fold_state = Required then
+		  begin
+		    for i = 5 to size-3 do
 		      for j = 1 to size-2-i do
-			let gen1 = aux i fold_state in
-			let gen2 = aux j fold_state in
-			let gen3 = aux (size-1-i-j) fold_state in
-			acc:=
-			  List.fold_left (fun acc x ->
-			    List.fold_left (fun acc y ->
-			      List.fold_left (fun acc z -> Notations.if0 x y z::acc) acc gen3)
-			      acc gen2)
-			    !acc gen1
+			let gen1 = aux i Required in
+			let gen2 = aux j Forbidden in
+			let gen3 = aux (size-1-i-j) Forbidden in
+			Array.iter (fun x ->
+			  Array.iter (fun y ->
+			    Array.iter (fun z -> add (Notations.if0 x y z)) gen3)
+			    gen2)
+			  gen1
 		      done;
 		    done;
-		    !acc
-	      | Foldo -> assert false)
-	      ops acc
-	  in
-	  let htbl = Term.H.create 13 in
-	  List.iter (fun x -> Term.H.replace htbl (simpl x) ()) res;
-	  memo.(size-1).(fold_state_int) <-
-	    Some
-	      (Term.H.fold (fun e _ acc -> e::acc) htbl [])
+		    for i = 1 to size-7 do
+		      for j = 5 to size-2-i do
+			let gen1 = aux i Forbidden in
+			let gen2 = aux j Required in
+			let gen3 = aux (size-1-i-j) Forbidden in
+			Array.iter (fun x ->
+			  Array.iter (fun y ->
+			    Array.iter (fun z -> add (Notations.if0 x y z)) gen3)
+			    gen2)
+			  gen1
+		      done;
+		    done;
+		    for i = 1 to size-7 do
+		      for j = 1 to size-6-i do
+			let gen1 = aux i Forbidden in
+			let gen2 = aux j Forbidden in
+			let gen3 = aux (size-1-i-j) Required in
+			Array.iter (fun x ->
+			  Array.iter (fun y ->
+			    Array.iter (fun z -> add (Notations.if0 x y z)) gen3)
+			    gen2)
+			  gen1
+		      done;
+		    done
+		  end
+		else
+		  for i = 1 to size-3 do
+		    for j = 1 to size-2-i do
+		      let gen1 = aux i fold_state in
+		      let gen2 = aux j fold_state in
+		      let gen3 = aux (size-1-i-j) fold_state in
+		      Array.iter (fun x ->
+			Array.iter (fun y ->
+			  Array.iter (fun z -> add (Notations.if0 x y z)) gen3)
+			  gen2)
+			gen1
+		    done;
+		  done
+	    | Foldo -> assert false)
+	    ops;
+	  let res = Array.make (Term.H.length htbl) Notations.mk_arg in
+	  ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
+	  memo.(size-1).(fold_state_int) <- Some res
 	end;
       match memo.(size-1).(fold_state_int) with
       | Some x -> x
       | None -> assert false
     in
-    let rec aux2 size fold_state =
-      if exact then aux size fold_state
-      else
-	match size with
-	| 0 -> []
-	| _ -> List.rev_append (aux size fold_state) (aux2 (size-1) fold_state)
-    in
-    if force_fold then
-      aux2 size (if has_fold then Required else Forbidden)
+    if exact && (not has_fold || force_fold) then
+      aux size (if has_fold then Required else Forbidden)
     else
-      let lst = aux2 size Forbidden in
-      if has_fold then List.rev_append (aux size Required) lst else lst
+      begin
+	let htbl = Term.H.create 100_000 in
+	for i = if exact then 1 else size to size do
+	  Array.iter (fun e -> Term.H.replace htbl e ())
+	    (aux size (if has_fold then Required else Forbidden));
+	  if has_fold && not force_fold then
+	    Array.iter (fun e -> Term.H.replace htbl e ()) (aux size Forbidden)
+	done;
+	let res = Array.make (Term.H.length htbl) Notations.mk_arg in
+	ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
+	res
+      end
   in
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     generate force_fold (size-1) exact ops Notations.([c0;c1;mk_arg])
@@ -240,18 +215,25 @@ let generate, generate_tfold, generate_novar,generate_context =
   (fun size ?(exact=true) ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-5 in
-    let lst =
+    let res =
       generate false size exact ops Notations.([c0;c1;mk_arg;mk_facc;mk_farg])
     in
-    List.rev_map (fun t -> Notations.(fold mk_arg c0 t)) lst
+    for i = 0 to Array.length res - 1 do
+      res.(i) <- Notations.(fold mk_arg c0 res.(i))
+    done;
+    res
   ),
   (fun ?(force_fold=true) size ?(exact=true) ops ->
     generate force_fold (size-1) exact ops Notations.([c0;c1])),
-  (fun size ops holes -> 
-    List.rev_map 
-      Term.renumber_holes (generate false size false ops (Notations.([c0;c1;mk_arg; hole 0 false])))
+  (fun size ops holes ->
+    let res =
+      generate false size false ops Notations.([c0;c1;mk_arg; hole 0 false])
+    in
+    for i = 0 to Array.length res - 1 do
+      res.(i) <- Term.renumber_holes res.(i)
+    done;
+    res
   )
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =
-  List.rev_map (fun t -> Eval.eval t 0L) (generate_novar ~force_fold ~exact size ops)
-
+  Array.map (fun t -> Eval.eval t 0L) (generate_novar ~force_fold ~exact size ops)
