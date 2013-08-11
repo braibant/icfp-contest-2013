@@ -149,6 +149,17 @@ module Notations = struct
     | 1L -> c1
     | _ -> HC.hashcons (Cst (v, e, -1))
 
+  let rec if0 c a b =
+    match c with
+    | C0 | Cst (0L, _, _) -> a
+    | C1 | Cst (_, _, _) -> b
+    | _ ->
+	if a == b then a
+	else if c == a then if0 c c0 b
+	else if Pervasives.(&&) (c == b) (a == c0) then c
+	else
+	  HC.hashcons (If0 (c, a, b, -1))
+
   (* unop *)
   let rec compose_op1 op ops =
     match op, ops with
@@ -159,8 +170,8 @@ module Notations = struct
     | Shr16, Shr1 :: q -> compose_op1 Shr1 (compose_op1 Shr16 q)
     | Shr16, Shr4 :: q -> compose_op1 Shr4 (compose_op1 Shr16 q)
     | _, _ -> op :: ops
-    
-  let op1 op x = 
+
+  let rec op1 op x =
     match op,x with
     | _, Op1 (ops,t,_) ->
       let ops = compose_op1 op ops in
@@ -170,20 +181,17 @@ module Notations = struct
     | Shr4, C0 | Shr4, C1 -> c0
     | Shr16, C0 | Shr16, C1 -> c0
     | Shl1, C0 -> c0
+    | _, If0 (a, b, c, _) -> if0 a (op1 op b) (op1 op c)
+    | ((Shr1 | Shr4 | Shr16 | Shl1), Op2 ((And|Or|Xor) as op', l, _)) ->
+	List.fold_right (fun e acc -> op2 op' (op1 op e) acc) l
+	  (unit_of_op2 op')
+    | (Not, Op2 ((And|Or) as op', l, _)) ->
+	let op' = match op' with And -> Or | Or -> And | _ -> assert false in
+	List.fold_right (fun e acc -> op2 op' (op1 op e) acc) l
+	  (unit_of_op2 op')
     | _, x -> HC.hashcons (Op1 ([op],x, -1))
-     
-  let (~~) x = op1 Not x 
-  let shl1 x = op1 Shl1 x
-  let shr1 x = op1 Shr1 x
-  let shr4 x = op1 Shr4 x
-  let shr16 x = op1 Shr16 x
 
-  (* binop *)
-  let unit_of_op2 = function
-    | And -> ~~ c0
-    | Or | Plus | Xor -> c0
-
-  let rec op2 op x y =
+  and op2 op x y =
     match x, op with
     | Op2 (op', l, _), _ when op = op' ->
 	List.fold_right (fun e acc -> op2 op e acc) l y
@@ -196,7 +204,7 @@ module Notations = struct
 	  | t::q when t == e ->
 	      begin match op with
 	      | And | Or -> l
-	      | Plus -> insert (shl1 t) q
+	      | Plus -> insert (op1 Shl1 t) q
 	      | Xor -> q
 	      end
 	  | t::q when get_exp_id t < get_exp_id e ->
@@ -214,13 +222,24 @@ module Notations = struct
 	| [] -> unit_of_op2 op
 	| [e] -> e
 	| l -> HC.hashcons (Op2 (op, l, -1))
+  and  unit_of_op2 = function
+    | And -> op1 Not c0
+    | Or | Plus | Xor -> c0
+
+  let (~~) x = op1 Not x 
+  let shl1 x = op1 Shl1 x
+  let shr1 x = op1 Shr1 x
+  let shr4 x = op1 Shr4 x
+  let shr16 x = op1 Shr16 x
+
+  (* binop *)
+
 
   let (&&) = op2 And
   let (||) = op2 Or
   let ( ** ) = op2 Xor
   let (++) = op2 Plus
 
-  let if0 c a b = HC.hashcons (If0 (c, a, b, -1))
   let fold c a b = HC.hashcons (Fold (c, a, b, -1))
 
   let hole n b = HC.hashcons (Hole (n,b))

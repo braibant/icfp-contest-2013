@@ -54,15 +54,8 @@ let rec min_free_var = function
       List.fold_left (fun acc e -> min acc (min_free_var e)) 3 l
 
 let rec simpl t =
-  if min_free_var t = 3 then Notations.cst (Eval.eval t 0L) t else
-  match t with
-  | If0 (C0, a, b, _) -> simpl a
-  | If0 (C1, a, b, _) -> simpl b
-  | If0 (Cst (v, _, _), a, b, _) -> if v = 0L then simpl a else simpl b
-  | If0 (_, a, b, _) when a == b -> simpl a
-  | t -> t
-
-
+  if min_free_var t = 3 then Notations.cst (Eval.eval t 0L) t
+  else t
 
 type fold_state =
   | Required
