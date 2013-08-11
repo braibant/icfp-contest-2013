@@ -33,9 +33,13 @@ let memo_generate =
 let memo_generate_tfold =
   memoize (fun size ops -> Generator.generate_tfold size ops)
 
+exception Incomplete
+
 (* Client *)
 module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O: ORACLE) = struct
   include X
+
+  let init_size = ref (min !Config.search_max n)
 
   (* a bitvector representation of a set of the possible programs *)
   type t = 
@@ -60,8 +64,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
       if (n < 8 || Generator.OSet.mem Term.Foldo ops) || not !Config.synthesis then
-	if tfold then memo_generate_tfold (min !Config.search_max n) ops
-	else memo_generate (min !Config.search_max n) ops
+	if tfold then memo_generate_tfold !init_size ops
+	else memo_generate !init_size ops
       else
 	begin
 	  (if Synthesis.Constraints.is_empty ()
@@ -83,7 +87,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   (* This function must be called to ensure that the current state is well-formed *)
   let check p =  
     if size p = 0 
-    then init ()
+    then 
+      (if !Config.interactive_mode then init ()
+       else raise Incomplete)
     else p
 
   let print (p:t)=
@@ -333,11 +339,18 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     else loop (succ round) p
       
   let loop () = 
-    let r =  (loop 0 (init ())) in 
-    Printf.printf "result\n";
-    Print.(print_exp r);
-    print_newline ()
-
+    let rec try_loop () =
+      try
+        let r =  (loop 0 (init ())) in 
+        Printf.printf "result\n";
+        Print.(print_exp r);
+        print_newline ()
+      with Incomplete ->
+        incr init_size;
+        Printf.eprintf "Search was incomplete!Trying next size %d\n%!"
+          !init_size;
+        try_loop ()
+    in try_loop ()
 end
 
 
