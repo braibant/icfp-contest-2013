@@ -1,7 +1,7 @@
 let begin_end_msg msg f =
-  Printf.printf "BEGIN %S\n%!" msg;
+  Printf.printf "BEGIN %S [%f]\n%!" msg (Sys.time ());
   let result = f () in
-  Printf.printf "END %S\n%!" msg;
+  Printf.printf "END %S [%f]\n%!" msg (Sys.time ());
   result
 
 let ask_confirmation () =
