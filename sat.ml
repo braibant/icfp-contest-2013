@@ -202,15 +202,17 @@ let encode_formula state env t =
           hole_vars.(n) <- Some res;
           res
       end
-  in encode t
+  in
+  let formula = encode t in
+  formula, hole_vars
 
 let discriminate l =
   let pbs =
     List.map (fun (t1, t2) ->
       let state = init_state () in
       let env = [|Array.init 64 (fun _ -> new_var state)|] in
-      let enc1 = encode_formula state env t1 in
-      let enc2 = encode_formula state env t2 in
+      let enc1, _no_holes = encode_formula state env t1 in
+      let enc2, _no_holes = encode_formula state env t2 in
       let diff = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [enc1.(i); enc2.(i); -diff.(i)];
