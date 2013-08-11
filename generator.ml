@@ -191,11 +191,11 @@ let generate, generate_tfold, generate_novar,generate_context =
     else
       begin
 	let htbl = Term.H.create 100_000 in
-	for i = if exact then 1 else size to size do
+	for i = if exact then size else 1 to size do
 	  Array.iter (fun e -> Term.H.replace htbl e ())
-	    (aux size (if has_fold then Required else Forbidden));
+	    (aux i (if has_fold then Required else Forbidden));
 	  if has_fold && not force_fold then
-	    Array.iter (fun e -> Term.H.replace htbl e ()) (aux size Forbidden)
+	    Array.iter (fun e -> Term.H.replace htbl e ()) (aux i Forbidden)
 	done;
 	let res = Array.make (Term.H.length htbl) Notations.mk_arg in
 	ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
