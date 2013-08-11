@@ -5,12 +5,12 @@ let launch_all_missiles p =
   Generator.OSet.mem Term.Foldo p.Main.operators
     || Random.int 4 = 0 
   then 
-    let command =       (Printf.sprintf "timeout 300 ./main.native --teraram --search-max 13 --single-problem %s" p.id)
+    let command =       (Printf.sprintf "timeout 300 ./main.native --bypass --teraram --search-max 13 --single-problem %s" p.id)
     in
     Printf.printf "%s\n%!" command;
     Sys.command command
   else
-    let command =       (Printf.sprintf "timeout 300 ./main.native --teraram -j 30 -s --context-size 8 --single-problem %s" p.id)
+    let command =       (Printf.sprintf "timeout 300 ./main.native --bypass --teraram -j 30 -s --context-size 8 --single-problem %s" p.id)
     in
     Printf.printf "%s\n%!" command;
     Sys.command command
