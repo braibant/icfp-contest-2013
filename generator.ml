@@ -231,7 +231,15 @@ let generate, generate_tfold, generate_novar,generate_context =
 	| _ -> acc
       ) res ([],[],[])
     in
-    Array.of_list (List.flatten [terms;contexts1;contexts2])
+    let n1 = List.length terms in
+    let n2 = List.length contexts1 in
+    let n3 = List.length contexts2 in
+    let n = n1 + n2 + n3 in 
+    let t = Array.create n Term.Notations.c0 in
+    List.iteri (fun i c -> t.(i) <- c) terms;
+    List.iteri (fun i c -> t.(i + n1) <- c) contexts1;
+    List.iteri (fun i c -> t.(i+n2 +n3) <- c) contexts2;
+    t
   )
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =
