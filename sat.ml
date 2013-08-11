@@ -71,6 +71,8 @@ let run_minisat problems =
     res)
     datas
 
+let new_64var state = Array.init 64 (fun _ -> new_var state)
+
 let encode_formula state env hole_env t =
   let rec encode = function
     | C0 -> Array.make 64 zero_var
@@ -83,7 +85,7 @@ let encode_formula state env hole_env t =
       let a = encode a in
       let b = encode b in
       let c = encode c in
-      let res = Array.init 64 (fun _ -> new_var state) in
+      let res = new_64var state in
       let is_0 = new_var state in
       add_clause state (is_0::Array.to_list a);
       for i = 0 to 63 do
@@ -133,7 +135,7 @@ let encode_formula state env hole_env t =
     | Op2(And, t::q, _) ->
       let a = encode t in
       let b = encode (Term.__op2 And q) in
-      let res = Array.init 64 (fun _ -> new_var state) in
+      let res = new_64var state in
       for i = 0 to 63 do
 	add_clause state [-a.(i);-b.(i);res.(i)];
 	add_clause state [a.(i);-res.(i)];
@@ -143,7 +145,7 @@ let encode_formula state env hole_env t =
     | Op2(Or, t::q, _) ->
       let a = encode t in
       let b = encode (Term.__op2 Or q) in
-      let res = Array.init 64 (fun _ -> new_var state) in
+      let res = new_64var state in
       for i = 0 to 63 do
 	add_clause state [a.(i);b.(i);-res.(i)];
 	add_clause state [-a.(i);res.(i)];
@@ -153,7 +155,7 @@ let encode_formula state env hole_env t =
     | Op2(Xor, t::q, _) ->
       let a = encode t in
       let b = encode (Term.__op2 Xor q) in
-      let res = Array.init 64 (fun _ -> new_var state) in
+      let res = new_64var state in
       for i = 0 to 63 do
 	add_clause state [-a.(i);b.(i);res.(i)];
 	add_clause state [a.(i);-b.(i);res.(i)];
@@ -164,7 +166,7 @@ let encode_formula state env hole_env t =
     | Op2(Plus, t::q, _) ->
       let a = encode t in
       let b = encode (Term.__op2 Plus q) in
-      let res = Array.init 64 (fun _ -> new_var state) in
+      let res = new_64var state in
       let carry = Array.init 64 (fun i ->
 	if i = 0 then zero_var else new_var state) in
       for i = 0 to 63 do
@@ -200,15 +202,26 @@ let encode_formula state env hole_env t =
   let formula = encode t in
   formula
 
+(*
+let equiv t1 t2 = 
+  let state = init_state () in
+  let env = [|new_64var state|] in
+  let nb_holes = max (Term.holes t1) (Term.holes t2) in
+  let holes = Array.init nb_holes (fun _ -> new_64var state) in
+  let enc1 = encode_formula state env holes t1 in
+  let enc2 = encode_formula state env holes t2 in
+  TO BE CONTINUED...
+*)
+
 let discriminate l =
   let pbs =
     List.map (fun (t1, t2) ->
       let state = init_state () in
-      let env = [|Array.init 64 (fun _ -> new_var state)|] in
+      let env = [|new_64var state|] in
       let no_holes = [||] in
       let enc1 = encode_formula state env no_holes t1 in
       let enc2 = encode_formula state env no_holes t2 in
-      let diff = Array.init 64 (fun _ -> new_var state) in
+      let diff = new_64var state in
       for i = 0 to 63 do
 	add_clause state [enc1.(i); enc2.(i); -diff.(i)];
 	add_clause state [-enc1.(i); -enc2.(i); -diff.(i)]
