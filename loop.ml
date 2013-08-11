@@ -312,7 +312,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     let p = check p in 
     let oldsize = size p in
     let keys =
-      if round < 2 then  Array.init 256 (fun _ -> rnd64 ())
+      if round < 2 then Array.init 256 (fun _ -> rnd64 ())
       else best_sat p in 
     let values = eval keys in 
     let refined,p = refine p keys values in

@@ -243,7 +243,7 @@ let solve_easy_problems max_size =
       exit 0
     end;
     play_online data None;
-    let pause_time = 7 in
+    let pause_time = !Config.pause_time_after_problem in
     Printf.printf "I'm doing a %d second pause before the next problem;
                    Interrupt me now (C-c) if you want to stop.\n%!" pause_time;
     Unix.sleep pause_time;

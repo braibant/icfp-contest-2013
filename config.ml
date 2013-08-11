@@ -32,6 +32,8 @@ let list_problems = ref false
 
 let show_status = ref false
 
+let pause_time_after_problem = ref 0
+
 let args = 
   let open Arg in 
   align [
@@ -76,4 +78,6 @@ let args =
 
     "--quotient", Set quotient, " set quotienting (enabled by default)";
     "--no-quotient", Clear quotient, " disable quotienting";
+
+    "--pause-after-problem", Set_int pause_time_after_problem, "INT sleep the given number of seconds after each problem (default 0)";
   ]
