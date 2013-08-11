@@ -25,15 +25,20 @@ type 'a sat_result =
   | Unsat
   | Unknown
 
+let output_int chan n = output_string chan (string_of_int n)
+
 let run_minisat problems =
   let datas =
     List.map (fun problem ->
       let (in_file_name, chan) = Filename.open_temp_file "minisat_input" ".cnf" in
-      Printf.fprintf chan "c blah\n";
-      Printf.fprintf chan "p cnf %d %d\n" (problem.next_var-1) (List.length problem.clauses);
+      output_string chan "c blah\n";
+      (* Printf.fprintf chan "p cnf %d %d\n" () (List.length problem.clauses); *)
+      output_string chan "p cnf ";
+      output_int chan (problem.next_var-1); output_char chan ' ';
+      output_int chan (List.length problem.clauses); output_char chan '\n';
       List.iter (fun cl ->
-	List.iter (Printf.fprintf chan "%d ") cl;
-	Printf.fprintf chan "0\n")
+	List.iter (fun i -> output_int chan i; output_char chan ' ') cl;
+	output_string chan "0\n")
 	problem.clauses;
       close_out chan;
       let out_file_name = Filename.temp_file "minisat" ".out" in
