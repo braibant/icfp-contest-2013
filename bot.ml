@@ -1,9 +1,10 @@
 open Main
 
+let _ = Random.self_init ();;
+
 let launch_all_missiles p =
-  if 
-  Generator.OSet.mem Term.Foldo p.Main.operators
-    || Random.int 4 = 0 
+  if  Generator.OSet.mem Term.Foldo p.Main.operators
+    || Random.int 6 <> 0 
   then 
     let command =       (Printf.sprintf "timeout 300 ./main.native --bypass --teraram --search-max 13 --single-problem %s" p.id)
     in
