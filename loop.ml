@@ -23,7 +23,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     then None
     else
       Utils.begin_end_msg "computing env" begin fun () ->
-      Some (Synthesis.generate 7 (n- 5) ops) 
+      Some (Synthesis.generate 9 (n- 7) ops) 
       end
 
   let get_env () = match env with None -> assert false | Some env -> env 
