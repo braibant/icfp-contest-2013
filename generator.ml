@@ -189,12 +189,17 @@ let generate, generate_tfold, generate_novar,generate_context =
             (* unplug quotient here! *)
             then res
             else begin
-              let quotient =
-                Array.of_list (Quotient.quotient (Array.to_list res))
-              in
-              Printf.printf "Quotienting level %d helped memo from %d to %d\n%!"
-                size res_len (Array.length quotient);
-              quotient
+              try
+                let quotient =
+                  Array.of_list (Quotient.quotient (Array.to_list res))
+                in
+                Printf.printf "Quotienting level %d helped memo from %d to %d\n%!"
+                  size res_len (Array.length quotient);
+                quotient
+              with exn ->
+                Printf.eprintf "failure when quotienting: %s\nGoing on.\n%!"
+                  (Printexc.to_string exn);
+                res
             end
           in
 	  memo.(size-1).(fold_state_int) <- Some res
