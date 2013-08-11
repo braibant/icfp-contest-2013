@@ -71,18 +71,18 @@ let run_minisat problems =
     res)
     datas
 
-let rec encode_formula state env t =
-  match t with
-  | C0 -> Array.make 64 zero_var
-  | C1 ->
+let encode_formula state env t =
+  let rec encode = function
+    | C0 -> Array.make 64 zero_var
+    | C1 ->
       let res = Array.make 64 zero_var in
       res.(0) <- -zero_var;
       res
-  | Var x -> env.(x)
-  | If0 (a, b, c, _) ->
-      let a = encode_formula state env a in
-      let b = encode_formula state env b in
-      let c = encode_formula state env c in
+    | Var x -> env.(x)
+    | If0 (a, b, c, _) ->
+      let a = encode a in
+      let b = encode b in
+      let c = encode c in
       let res = Array.init 64 (fun _ -> new_var state) in
       let is_0 = new_var state in
       add_clause state (is_0::Array.to_list a);
@@ -94,45 +94,45 @@ let rec encode_formula state env t =
 	add_clause state [is_0;c.(i);-res.(i)]
       done;
       res
-  | Fold(a, b, c, _) ->
-      let a = encode_formula state env a in
-      let acc = ref (encode_formula state env b) in
+    | Fold(a, b, c, _) ->
+      let a = encode a in
+      let acc = ref (encode b) in
       for i = 0 to 7 do
 	let env = Array.make 3 env.(Constants.arg) in
 	env.(Constants.fold_acc) <- !acc;
 	env.(Constants.fold_arg) <- Array.make 64 zero_var;
 	Array.blit a (i*8) env.(Constants.fold_arg) 0 8;
-	acc := encode_formula state env c
+	acc := encode c
       done;
       !acc
-  | Op1 ([], _, _) -> assert false
-  | Op1(Not :: q, a, _) ->
-      let a = encode_formula state env (Term.__op1 q a) in
+    | Op1 ([], _, _) -> assert false
+    | Op1(Not :: q, a, _) ->
+      let a = encode (Term.__op1 q a) in
       Array.map (fun x -> -x) a
-  | Op1(Shl1::q , a, _) ->
-      let a = encode_formula state env (Term.__op1 q a) in
+    | Op1(Shl1::q , a, _) ->
+      let a = encode (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 0 res 1 63;
       res
-  | Op1(Shr1::q, a, _) ->
-      let a = encode_formula state env (Term.__op1 q a) in
+    | Op1(Shr1::q, a, _) ->
+      let a = encode (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 1 res 0 63;
       res
-  | Op1(Shr4::q, a, _) ->
-      let a = encode_formula state env (Term.__op1 q a) in
+    | Op1(Shr4::q, a, _) ->
+      let a = encode (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 4 res 0 60;
       res
-  | Op1(Shr16::q, a, _) ->
-      let a = encode_formula state env (Term.__op1 q a) in
+    | Op1(Shr16::q, a, _) ->
+      let a = encode (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 16 res 0 48;
       res
-  | Op2(_, [], _) -> assert false
-  | Op2(And, t::q, _) ->
-      let a = encode_formula state env t in
-      let b = encode_formula state env (Term.__op2 And q) in
+    | Op2(_, [], _) -> assert false
+    | Op2(And, t::q, _) ->
+      let a = encode t in
+      let b = encode (Term.__op2 And q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [-a.(i);-b.(i);res.(i)];
@@ -140,9 +140,9 @@ let rec encode_formula state env t =
 	add_clause state [b.(i);-res.(i)];
       done;
       res
-  | Op2(Or, t::q, _) ->
-      let a = encode_formula state env t in
-      let b = encode_formula state env (Term.__op2 Or q) in
+    | Op2(Or, t::q, _) ->
+      let a = encode t in
+      let b = encode (Term.__op2 Or q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [a.(i);b.(i);-res.(i)];
@@ -150,9 +150,9 @@ let rec encode_formula state env t =
 	add_clause state [-b.(i);res.(i)];
       done;
       res
-  | Op2(Xor, t::q, _) ->
-      let a = encode_formula state env t in
-      let b = encode_formula state env (Term.__op2 Xor q) in
+    | Op2(Xor, t::q, _) ->
+      let a = encode t in
+      let b = encode (Term.__op2 Xor q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [-a.(i);b.(i);res.(i)];
@@ -161,9 +161,9 @@ let rec encode_formula state env t =
 	add_clause state [-a.(i);-b.(i);-res.(i)];
       done;
       res
-  | Op2(Plus, t::q, _) ->
-      let a = encode_formula state env t in
-      let b = encode_formula state env (Term.__op2 Plus q) in
+    | Op2(Plus, t::q, _) ->
+      let a = encode t in
+      let b = encode (Term.__op2 Plus q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       let carry = Array.init 64 (fun i ->
 	if i = 0 then zero_var else new_var state) in
@@ -187,12 +187,13 @@ let rec encode_formula state env t =
 	add_clause state [a.(i); b.(i); carry.(i); -res.(i)]
       done;
       res
-  | Cst (v, _, _) ->
+    | Cst (v, _, _) ->
       Array.init 64 (fun i ->
 	if Int64.logand 1L (Int64.shift_right_logical v i) = 1L then
 	  -zero_var
 	else zero_var)
-  | Hole _ -> assert false
+    | Hole _ -> assert false
+  in encode t
 
 let discriminate l =
   let pbs =
