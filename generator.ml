@@ -63,7 +63,7 @@ type fold_state =
   | Forbidden
 
 let generate, generate_tfold, generate_novar,generate_context =
-  let generate force_fold size exact ops atoms =
+  let generate ~in_context force_fold size exact ops atoms =
     let has_fold = OSet.mem Foldo ops in
     let ops = OSet.remove Foldo ops in
     let memo = Array.make_matrix size 3 None in
@@ -182,7 +182,8 @@ let generate, generate_tfold, generate_novar,generate_context =
 	  ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
           let res_len = Array.length res in
           let res =
-            if (* unplug quotient here! *) false then res
+            if res_len > 100_000 || in_context (* unplug quotient here! *)
+            then res
             else begin
               let quotient =
                 Array.of_list (Quotient.quotient (Array.to_list res))
@@ -215,13 +216,13 @@ let generate, generate_tfold, generate_novar,generate_context =
       end
   in
   (fun ?(force_fold=true) size ?(exact=true) ops ->
-    generate force_fold (size-1) exact ops Notations.([c0;c1;mk_arg])
+    generate ~in_context:false force_fold (size-1) exact ops Notations.([c0;c1;mk_arg])
   ),
   (fun size ?(exact=true) ops ->
     let ops = OSet.remove Foldo ops in
     let size = size-5 in
     let res =
-      generate false size exact ops Notations.([c0;c1;mk_arg;mk_facc;mk_farg])
+      generate ~in_context:false false size exact ops Notations.([c0;c1;mk_arg;mk_facc;mk_farg])
     in
     for i = 0 to Array.length res - 1 do
       res.(i) <- Notations.(fold mk_arg c0 res.(i))
@@ -229,10 +230,10 @@ let generate, generate_tfold, generate_novar,generate_context =
     res
   ),
   (fun ?(force_fold=true) size ?(exact=true) ops ->
-    generate force_fold (size-1) exact ops Notations.([c0;c1])),
+    generate ~in_context:false force_fold (size-1) exact ops Notations.([c0;c1])),
   (fun size ops holes ->
     let res =
-      generate false size false ops Notations.([c0;c1;mk_arg; hole 0 false])
+      generate ~in_context:true false size false ops Notations.([c0;c1;mk_arg; hole 0 false])
     in
     let terms,contexts1,contexts2 =
       Array.fold_right (fun c ((ts,cs1,cs2) as acc)->
