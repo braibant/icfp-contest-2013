@@ -72,6 +72,7 @@ let run_minisat problems =
     datas
 
 let encode_formula state env t =
+  let hole_vars = Array.make (Term.holes t) None in
   let rec encode = function
     | C0 -> Array.make 64 zero_var
     | C1 ->
@@ -192,7 +193,14 @@ let encode_formula state env t =
 	if Int64.logand 1L (Int64.shift_right_logical v i) = 1L then
 	  -zero_var
 	else zero_var)
-    | Hole _ -> assert false
+    | Hole n ->
+      begin match hole_vars.(n) with
+        | Some res -> res
+        | None ->
+          let res = Array.init 64 (fun _ -> new_var state) in
+          hole_vars.(n) <- Some res;
+          res
+      end
   in encode t
 
 let discriminate l =

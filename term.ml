@@ -121,7 +121,7 @@ let holes x =
     | Op1 (_, e, _) -> aux e
     | Op2 (_, l, _) -> List.fold_left (fun acc e -> acc + aux e) min_int l
     | Cst (_, _, _) -> min_int
-  in succ (aux x)
+  in max 0 (succ (aux x))
 
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 

@@ -29,7 +29,7 @@ module Context = struct
   (* in fact, all we need is n > 2 possible contexts !!! *)
   exception Found of Term.exp array list
   let fit (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list  =
-    let n = max 0 (Term.holes c) in 
+    let n = Term.holes c in 
     let sigma1 = Array.create n Vect.zero in 
     let sigma2 = Array.create n ([]) in
 
