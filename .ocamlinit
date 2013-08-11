@@ -6,6 +6,7 @@
 #require "camlp4";;
 #require "camlp4.fulllib";;
 #require "functory";;
+#require "parmap";;
 #load "camlp4lib.cma";;
 #directory "_build";;
 #load "_build/icfp.cma";;

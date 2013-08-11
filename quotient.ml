@@ -32,31 +32,29 @@ let discr_from_sat list =
   let keys = List.concat (List.map get_result sat_results) in
   Array.of_list keys
 
-let quotient ?(time_budget=10.) set =
+let quotient ?(time_budget=5.) set =
+  if List.length set > 10_000 then set else
   let holes = Array.init 20 (fun _ -> Term.rnd64 ()) in
-  let discr = Array.init 100 (fun _ -> Term.rnd64 ()) in
+  let discr = Array.init 40 (fun _ -> Term.rnd64 ()) in
   let subsets = discriminate set discr holes in
   let start_time = Unix.gettimeofday () in
-  let end_budget = lazy (print_endline "quotient time budget ended") in
+  let budget_ended = ref false in
+  let size_limit = 10 in
   let handle subset =
     let len = List.length subset in
-    if len < 10 then quotient_list subset
+    if len <= size_limit then quotient_list subset
+    else if !budget_ended then subset
     else begin
+      if Unix.gettimeofday () -. start_time > time_budget then begin
+        print_endline "quotient budget ended";
+        budget_ended := true;
+      end;
       let discr = discr_from_sat subset in
       let subsubsets = discriminate subset discr holes in
-      if false (* debug *) then begin
-        Printf.printf "list %d was split into %s\n" len
-          (String.concat "," (List.map (fun l -> string_of_int (List.length l))
-                                subsubsets))
-      end;
       let sub_handle subsubset =
-        if false (* can have size condition here *)
-          || (List.length subsubset > 20
-              && Unix.gettimeofday () -. start_time > time_budget
-              && (Lazy.force end_budget; true))
-        then subsubset
+        if !budget_ended && List.length subsubset > size_limit then subsubset
         else quotient_list subsubset in
       List.concat (List.map sub_handle subsubsets)
     end
   in
-  List.concat (List.map handle subsets)  
+  List.concat (List.map handle subsets)

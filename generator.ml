@@ -184,15 +184,11 @@ let generate, generate_tfold, generate_novar,generate_context =
           let res =
             if (* unplug quotient here! *) false then res
             else begin
-              let msg = Printf.sprintf "quotient gen %d" size in
               let quotient =
-                Utils.begin_end_msg msg (fun () ->
-                  Utils.time msg (fun () ->
-                    Array.of_list (Quotient.quotient (Array.to_list res))
-                  )
-                ) in
-              Printf.printf "Quotienting helped memo from %d to %d\n%!"
-                res_len (Array.length quotient);
+                Array.of_list (Quotient.quotient (Array.to_list res))
+              in
+              Printf.printf "Quotienting level %d helped memo from %d to %d\n%!"
+                size res_len (Array.length quotient);
               quotient
             end
           in
