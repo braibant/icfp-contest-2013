@@ -238,7 +238,7 @@ let generate, generate_tfold, generate_novar,generate_context =
     let t = Array.create n Term.Notations.c0 in
     List.iteri (fun i c -> t.(i) <- c) terms;
     List.iteri (fun i c -> t.(i + n1) <- c) contexts1;
-    List.iteri (fun i c -> t.(i+n2 +n3) <- c) contexts2;
+    List.iteri (fun i c -> t.(i+n1 +n2) <- c) contexts2;
     t
   )
 
