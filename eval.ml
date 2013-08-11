@@ -93,6 +93,7 @@ let eval =
 		      | Shr1 -> shift_right_logical e 1
 		      | Shr4 -> shift_right_logical e 4
 		      | Shr16 -> shift_right_logical e 16
+		      | _ -> assert false 
 		      end
     | Op2 (_, [], _) -> assert false
     | Op2 (op,e::q,_) -> let e = eval  e in
@@ -147,6 +148,7 @@ let eval_with_holes holes =
 		      | Shr1 -> shift_right_logical e 1
 		      | Shr4 -> shift_right_logical e 4
 		      | Shr16 -> shift_right_logical e 16
+		      | _ -> assert false 
 		      end
     | Op2 (_, [], _) -> assert false
     | Op2 (op,e::q,_) -> let e = eval  e in
