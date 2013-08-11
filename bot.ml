@@ -21,8 +21,10 @@ let launch_all_missiles p =
 
 let give_me_a_target () = 
   if not !Config.sync_problem_list then sync_problem_list ();
-  let pb = List.hd (unsolved_problems_sorted ())  in 
-  problem_data pb
+  let l =  unsolved_problems_sorted () in 
+  let n = Random.int (min (List.length l) 20) in
+  let pb = List.nth l n in
+  problem_data pb 
   
 let _ =
   launch_all_missiles (give_me_a_target ())
