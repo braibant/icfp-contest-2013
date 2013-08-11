@@ -11,6 +11,36 @@ let eval a b c =
     Print.print_exp_nl a;  
     raise e
       
+module PrioQueue = struct
+  let n = 5 				(* virons les contextes a plus que 5 trou *)
+
+  exception Empty
+
+  type t =
+    {queues : Term.exp Queue.t array;
+     mutable current : int }
+
+  let create () : t = 
+    {queues = Array.init n (fun _ -> Queue.create ());
+     current = 0}
+
+  let rec pop (q:t) =
+    try  Queue.pop q.queues.(q.current) 
+    with Queue.Empty ->
+      if  q.current < n
+      then (q.current <- q.current + 1; pop q)
+      else raise Empty
+
+  let add elt (q:t) =
+    let nholes = Term.holes elt in 
+    if nholes < n then   Queue.add elt q.queues.(nholes) else ()
+end
+
+
+
+
+
+  
    
    
 let explode (v: 'a list array) acc : 'a array list =
@@ -53,7 +83,7 @@ let fit (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list 
 type t =
   {
     terms: Term.exp array;
-    contexts: Term.exp Queue.t;
+    contexts: PrioQueue.t;
     map: (Term.exp list VMap.t) option ref ; 	(* this field is mutable, because it will be computed only on the first execution of synthesis... *)
   }
 
@@ -87,8 +117,8 @@ let synthesis
       function
       | 0 -> acc
       | n -> 
-	try  aux  (Queue.pop contexts :: acc) (n - 1)
-	with Queue.Empty -> 
+	try  aux  (PrioQueue.pop contexts :: acc) (n - 1)
+	with PrioQueue.Empty -> 
 	  if acc = [] 
 	  then failwith "contexts depleted"
 	  else acc
@@ -112,17 +142,6 @@ let synthesis
     if List.length res > 1 then res else  aux res
   in 
   aux []
-  (* let rec aux acc =  *)
-  (*   try  *)
-  (*     let c = Queue.pop contexts in  *)
-  (*     let res = fit map keys values c in  *)
-  (*     let res = List.map (fun prg -> Term.subst_holes prg c) res in  *)
-  (*     let res = List.rev_append res acc in *)
-  (*     if List.length res > 2 then res else  aux res *)
-
-  (*   with Queue.Empty -> failwith "contexts depleted" *)
-  (* in *)
-  (* aux []  *)
   
 let generate sizeT sizeE ops =
   Printf.printf "synthesis:  t %i e %i\n%!" sizeT sizeE;
@@ -130,7 +149,7 @@ let generate sizeT sizeE ops =
   Printf.printf "terms: %i\n%!" (Array.length terms);
   let contexts = Generator.generate_context sizeE ops ([Term.Notations.hole 0 false]) in
   Printf.printf "contexts: %i\n%!" (Array.length contexts);
-  let queue = Queue.create () in
-  Array.iter (fun elt -> Queue.add elt queue) contexts;
+  let queue = PrioQueue.create () in
+  Array.iter (fun elt -> PrioQueue.add elt queue) contexts;
   {terms; contexts= queue; map = ref None}
   
