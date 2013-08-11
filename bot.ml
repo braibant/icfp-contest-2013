@@ -3,10 +3,12 @@ open Main
 let _ = Random.self_init ();;
 
 let launch_all_missiles p =
-  if  Generator.OSet.mem Term.Foldo p.Main.operators
+  let has_fold =  Generator.OSet.mem Term.Foldo p.Main.operators in 
+  if has_fold 
     || Random.int 6 <> 0 
   then 
-    let command =       (Printf.sprintf "timeout 300 ./main.native --bypass --teraram --search-max 13 --single-problem %s" p.id)
+    let i =   has_fold then 11 else 13 in 
+    let command =       (Printf.sprintf "timeout 300 ./main.native --bypass --teraram --search-max %i --single-problem %s" i p.id)
     in
     Printf.printf "%s\n%!" command;
     Sys.command command

@@ -78,8 +78,8 @@ let args =
     "--context-size", Set_int context_size, " set max context size";
     (* "--batch", Set_int batch_size, " size of batches to be dispatched between the cores" *)
 
-    "--quotient", Set quotient, " set quotienting (enabled by default)";
-    "--no-quotient", Clear quotient, " disable quotienting";
+    "--quotient", Set quotient, " set quotienting";
+    "--no-quotient", Clear quotient, " disable quotienting (disabled by default)";
 
     "--pause-after-problem", Set_int pause_time_after_problem, "INT sleep the given number of seconds after each problem (default 0)";
     "--bypass", Set bypass, " disbale all interactive queries"
