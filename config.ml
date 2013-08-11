@@ -5,7 +5,7 @@ let interactive_mode = ref false
 let problem_size = ref 4
 let synthesis = ref false
 let jobs = ref 4
-
+let context_size = ref 10
 let solved_file = ref "solved_problems"
 let problems_file = ref "problems"
 let last_training_file = ref "last_training"
@@ -65,5 +65,6 @@ let args =
     "-s", Set synthesis, " use synthesis mode";
     (* "-j", Int (fun i -> jobs := i;   Functory.Cores.set_number_of_cores i), " number of cores"; *)
     "-j", Int (fun i -> jobs := i;   Parmap.set_default_ncores i), " number of cores";
+    "--context-size", Set_int context_size, " set max context size";
     (* "--batch", Set_int batch_size, " size of batches to be dispatched between the cores" *)
   ]
