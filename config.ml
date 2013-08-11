@@ -61,5 +61,6 @@ let args =
     "--problem-size", Set_int problem_size, "INT set problem size";
     "-n", Set_int problem_size, " (idem)";
 
-    "-s", Set synthesis, " use synthesis mode"
+    "-s", Set synthesis, " use synthesis mode";
+    "-j", Int (Functory.Cores.set_number_of_cores), " number of cores"
   ]
