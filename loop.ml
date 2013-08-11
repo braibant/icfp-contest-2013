@@ -9,6 +9,30 @@ module type ORACLE = sig
   val reveal : unit  -> Term.exp option
 end
 
+module GenInput = struct
+  type t = int * Generator.OSet.t
+  let compare (sa, opa) (sb, opb) =
+    match compare sa sb with
+      | 0 -> Generator.OSet.compare opa opb
+      | n -> n
+end
+module MapGenInput = Map.Make(GenInput)
+
+let memoize generate_fun =
+  let memo = ref MapGenInput.empty in
+  fun size ops ->
+    let k = (size, ops) in
+    try MapGenInput.find k !memo
+    with Not_found ->
+      let result = generate_fun size ops in
+      memo := MapGenInput.add k result !memo;
+      result
+
+let memo_generate =
+  memoize (fun size ops -> Generator.generate size ops)
+let memo_generate_tfold =
+  memoize (fun size ops -> Generator.generate_tfold size ops)
+
 (* Client *)
 module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O: ORACLE) = struct
   include X
@@ -36,8 +60,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
       if (n < 8 || Generator.OSet.mem Term.Foldo ops) || not !Config.synthesis then
-	if tfold then Generator.generate_tfold (min !Config.search_max n) ops
-	else Generator.generate (min !Config.search_max n) ops
+	if tfold then memo_generate_tfold (min !Config.search_max n) ops
+	else memo_generate (min !Config.search_max n) ops
       else
 	begin
 	  (if Synthesis.Constraints.is_empty ()
