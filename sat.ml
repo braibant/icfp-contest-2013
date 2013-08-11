@@ -71,9 +71,7 @@ let run_minisat problems =
     res)
     datas
 
-let encode_formula state env t =
-  (* lazily generate variables for holes of the term *)
-  let hole_vars = Array.make (Term.holes t) None in
+let encode_formula state env hole_env t =
   let rec encode = function
     | C0 -> Array.make 64 zero_var
     | C1 ->
@@ -195,24 +193,21 @@ let encode_formula state env t =
 	  -zero_var
 	else zero_var)
     | Hole (n, _b) ->
-      begin match hole_vars.(n) with
-        | Some res -> res
-        | None ->
-          let res = Array.init 64 (fun _ -> new_var state) in
-          hole_vars.(n) <- Some res;
-          res
-      end
+      if Array.length hole_env < n then
+        failwith (Printf.sprintf "Sat.encode: hole %d too large" n);
+      hole_env.(n)
   in
   let formula = encode t in
-  formula, hole_vars
+  formula
 
 let discriminate l =
   let pbs =
     List.map (fun (t1, t2) ->
       let state = init_state () in
       let env = [|Array.init 64 (fun _ -> new_var state)|] in
-      let enc1, _no_holes = encode_formula state env t1 in
-      let enc2, _no_holes = encode_formula state env t2 in
+      let no_holes = [||] in
+      let enc1 = encode_formula state env no_holes t1 in
+      let enc2 = encode_formula state env no_holes t2 in
       let diff = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [enc1.(i); enc2.(i); -diff.(i)];
