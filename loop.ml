@@ -100,7 +100,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 
   (* find values that discriminate using sat solving *)
   let best_sat (p:t ) =
-    begin_end_msg "BEST_SAT" begin fun () -> 
+    Utils.begin_end_msg "BEST_SAT" begin fun () -> 
     let keys = ref [] in
     for j = 0 to 10 do
       let get_nth k =
