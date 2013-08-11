@@ -96,28 +96,32 @@ let explode (v: 'a list array) acc : 'a array list =
 	) v.(i) acc
   in aux [] 0 acc 
 
+
 (* in fact, all we need is n > 0 possible contexts !!! *)
 exception Found of Term.exp array list
-let fit (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list  =
+let fit ?(time_budget=10.) (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list  =
   let n = Term.holes c in 
   let sigma1 = Array.create n src in 
   let sigma2 = Array.create n ([]) in
 
   (* early termination detection *)
   let check l = if List.length l > 2 then raise (Found l) else l in 
-  
+  let start_time = Unix.gettimeofday () in 
   let rec aux i acc : Term.exp array list =
-    if i = n then 
-      (if try Vect.equal (eval c sigma1 src) tgt with _ -> true 
-       then check (explode sigma2  acc)
-       else acc)
+    if Unix.gettimeofday () -. start_time > time_budget
+    then acc 
     else
-      VMap.fold 
-	(fun k t acc ->
-	  sigma1.(i) <- k;
-	  sigma2.(i) <- t;
-	  aux (i+1) acc
-	) space acc
+      if i = n then 
+	(if try Vect.equal (eval c sigma1 src) tgt with _ -> true 
+	  then check (explode sigma2  acc)
+	  else acc)
+      else
+	VMap.fold 
+	  (fun k t acc ->
+	    sigma1.(i) <- k;
+	    sigma2.(i) <- t;
+	    aux (i+1) acc
+	  ) space acc
   in 
   try aux 0  []
   with Found l -> l
