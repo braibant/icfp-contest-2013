@@ -72,6 +72,7 @@ let run_minisat problems =
     datas
 
 let encode_formula state env t =
+  (* lazily generate variables for holes of the term *)
   let hole_vars = Array.make (Term.holes t) None in
   let rec encode = function
     | C0 -> Array.make 64 zero_var
