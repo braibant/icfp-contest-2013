@@ -27,7 +27,13 @@ let rec sexp_exp = function
       | op::ops -> List [Word (string_of_op1 op); aux  ops]
     in
     aux ops
-  | Op2 (op, e1, e2, _) -> List [Word (string_of_op2 op); sexp_exp e1; sexp_exp e2]
+  | Op2 (op, l, _) ->
+      let rec aux = function
+	| [] -> assert false
+	| [e] -> sexp_exp e
+	| e::es -> List [Word (string_of_op2 op); sexp_exp e; aux es]
+      in
+      aux l
   | Cst (_, e, _) -> sexp_exp e
 and sexp_lam_generic args e =
   List [Word "lambda"; List args; sexp_exp e]

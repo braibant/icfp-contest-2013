@@ -17,7 +17,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   type t = Bitv.t 
 
   let terms = Utils.begin_end_msg "computing terms" begin fun () ->
-    if n < 8 || tfold then
+    if n < 8 || tfold || true then
       Array.of_list (
         if tfold then Generator.generate_tfold n ops
 	else Generator.generate n ops)

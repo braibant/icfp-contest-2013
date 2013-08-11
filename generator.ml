@@ -22,8 +22,8 @@ let operators t =
     | Op1(ops,a,_) ->
       let l = ops_from_list (List.map (fun x -> Op1o x) ops) in
 	operators a (OSet.union l acc)
-    | Op2(op,a,b,_) ->
-	operators a (operators b (OSet.add (Op2o op) acc))
+    | Op2(op,l,_) ->
+	List.fold_left (fun acc e -> operators e acc) (OSet.add (Op2o op) acc) l
     | Cst(_, _, _) -> assert false
   in
   operators t OSet.empty
@@ -32,7 +32,7 @@ let rec min_free_var = function
   | C0 -> 3
   | C1 -> 3
   | Cst (_, _, _) -> 3
-  | Hole (_,b) -> if b then 0 else 1 
+  | Hole (_,b) -> if b then 0 else 1
   | Var x -> x
   | If0(a,b,c,_) ->
       begin match min_free_var a with
@@ -50,8 +50,8 @@ let rec min_free_var = function
 	0
   | Op1 (_, a, _) ->
       min_free_var a
-  | Op2 (_, a, b, _) ->
-      min (min_free_var a) (min_free_var b)
+  | Op2 (_, l, _) ->
+      List.fold_left (fun acc e -> min acc (min_free_var e)) 3 l
 
 let rec simpl t =
   if min_free_var t = 3 then Notations.cst (Eval.eval t 0L) t else
@@ -60,27 +60,6 @@ let rec simpl t =
   | If0 (C1, a, b, _) -> simpl b
   | If0 (Cst (v, _, _), a, b, _) -> if v = 0L then simpl a else simpl b
   | If0 (_, a, b, _) when a == b -> simpl a
-  | Op2 (And, C0, t, _) | Op2 (And, t, C0, _)
-  | Op2 (And, Cst (0L, _, _), t, _) | Op2 (And, t, Cst (0L, _, _), _) ->
-      Notations.(cst 0L c0)
-  | Op2 (And, a, b, _) when a == b -> simpl a
-  | Op2 (And, (Op2 (And, a, b, _) as r), c, _) when b == c -> simpl r
-  | Op2 (Or, C0, t, _) | Op2 (Or, t, C0, _)
-  | Op2 (Or, Cst (0L, _, _), t, _) | Op2 (Or, t, Cst (0L, _, _), _) ->
-      simpl t
-  | Op2 (Or, a, b, _) when a == b -> simpl a
-  | Op2 (Or, (Op2 (Or, a, b, _) as r), c, _) when b == c -> simpl r
-  | Op2 (Xor, C0, t, _) | Op2 (Xor, t, C0, _)
-  | Op2 (Xor, Cst (0L, _, _), t, _) | Op2 (Xor, t, Cst (0L, _, _), _) ->
-      simpl t
-  | Op2 (Xor, a, b, _) when a == b -> Notations.(cst 0L c0)
-  | Op2 (Xor, Op2 (Xor, a, b, _), c, _) when b == c -> simpl a
-  | Op2 (Plus, C0, t, _) | Op2 (Plus, t, C0, _)
-  | Op2 (Plus, Cst (0L, _, _), t, _) | Op2 (Plus, t, Cst (0L, _, _), _) ->
-      simpl t
-  | Op2 (Plus, a, b, _) when a == b -> simpl (Notations.shl1 a)
-  | Op2 (Plus, Op2 (Plus, a, b, _), c, _) when b == c ->
-      simpl Notations.(a ++ shl1 b)
   | t -> t
 
 

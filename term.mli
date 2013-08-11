@@ -6,7 +6,7 @@ type exp = private
 | If0 of exp * exp * exp * tag
 | Fold of exp * exp * exp * tag
 | Op1 of op1 list * exp * tag
-| Op2 of op2 * exp * exp * tag
+| Op2 of op2 * exp list * tag
 | Cst of int64 (* Value *) * exp (* example of realisation *) * tag
 and tag
 and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
@@ -14,6 +14,7 @@ and op2 = | And | Or | Xor | Plus
 and ident = int
 
 val __op1 : op1 list -> exp -> exp
+val __op2 : op2 -> exp list -> exp
 
 val get_exp_id : exp -> int
 

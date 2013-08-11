@@ -24,8 +24,9 @@ let rec ho_evalv sigma args env =
 		    | Shr4 -> Array.map (fun e -> shift_right_logical e 4) e
 		    | Shr16 -> Array.map (fun e ->shift_right_logical e 16) e
 		    end
-    | Op2 (op,e,f,_) -> let e = aux  e in
-		      let f = aux  f in 
+    | Op2 (_, [], _) -> assert false
+    | Op2 (op,e::q,_) -> let e = aux  e in
+		      let f = aux  (Term.__op2 op q) in 
 		      begin match op with
 		      | Term.And -> map2 logand e f
 		      | Term.Or -> map2 logor e f
@@ -86,8 +87,9 @@ let eval =
 		      | Shr4 -> shift_right_logical e 4
 		      | Shr16 -> shift_right_logical e 16
 		      end
-    | Op2 (op,e,f,_) -> let e = eval  e in
-			let f = eval  f in 
+    | Op2 (_, [], _) -> assert false
+    | Op2 (op,e::q,_) -> let e = eval  e in
+		      let f = eval  (Term.__op2 op q) in 
 			begin match op with
 			| And -> logand e f
 			| Or -> logor e f

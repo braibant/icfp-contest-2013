@@ -129,9 +129,10 @@ let rec encode_formula state env t =
       let res = Array.make 64 zero_var in
       Array.blit a 16 res 0 48;
       res
-  | Op2(And, a, b, _) ->
-      let a = encode_formula state env a in
-      let b = encode_formula state env b in
+  | Op2(_, [], _) -> assert false
+  | Op2(And, t::q, _) ->
+      let a = encode_formula state env t in
+      let b = encode_formula state env (Term.__op2 And q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [-a.(i);-b.(i);res.(i)];
@@ -139,9 +140,9 @@ let rec encode_formula state env t =
 	add_clause state [b.(i);-res.(i)];
       done;
       res
-  | Op2(Or, a, b, _) ->
-      let a = encode_formula state env a in
-      let b = encode_formula state env b in
+  | Op2(Or, t::q, _) ->
+      let a = encode_formula state env t in
+      let b = encode_formula state env (Term.__op2 And q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [a.(i);b.(i);-res.(i)];
@@ -149,9 +150,9 @@ let rec encode_formula state env t =
 	add_clause state [-b.(i);res.(i)];
       done;
       res
-  | Op2(Xor, a, b, _) ->
-      let a = encode_formula state env a in
-      let b = encode_formula state env b in
+  | Op2(Xor, t::q, _) ->
+      let a = encode_formula state env t in
+      let b = encode_formula state env (Term.__op2 Xor q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       for i = 0 to 63 do
 	add_clause state [-a.(i);b.(i);res.(i)];
@@ -160,9 +161,9 @@ let rec encode_formula state env t =
 	add_clause state [-a.(i);-b.(i);-res.(i)];
       done;
       res
-  | Op2(Plus, a, b, _) ->
-      let a = encode_formula state env a in
-      let b = encode_formula state env b in
+  | Op2(Plus, t::q, _) ->
+      let a = encode_formula state env t in
+      let b = encode_formula state env (Term.__op2 Plus q) in
       let res = Array.init 64 (fun _ -> new_var state) in
       let carry = Array.init 64 (fun _ -> new_var state) in
       add_clause state [-carry.(0)];
