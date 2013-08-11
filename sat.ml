@@ -113,6 +113,7 @@ let encode_formula state env hole_env t =
       done;
       !acc
     | Op1 ([], _, _) -> assert false
+    | Op1 (Bonus :: _, _, _) -> assert false
     | Op1(Not :: q, a, _) ->
       let a = encode env (Term.__op1 q a) in
       Array.map (fun x -> -x) a

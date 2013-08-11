@@ -9,8 +9,8 @@ type exp =
 | Op2 of op2 * exp list * tag
 | Cst of int64 (* Value *) * exp (* example of realisation *) * tag
 and tag = int
-and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
-and op2 = | And | Or | Xor | Plus
+and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16 | Bonus
+and op2 = | And | Or | Xor | Plus 
 and ident = int
 
 let get_exp_id = function
@@ -52,7 +52,7 @@ module HC = Hashcons.Make(struct
     | _ -> false
 
   let hash_op1 op =
-    match op with Not -> 19 | Shl1 -> 23 | Shr1 -> 59 | Shr4 -> 61 | Shr16 -> 67
+    match op with Not -> 19 | Shl1 -> 23 | Shr1 -> 59 | Shr4 -> 61 | Shr16 -> 67 | _ -> 42
       
   let hash x =
     match x with
@@ -324,6 +324,7 @@ let string_of_op1 = function
   | Shr1 -> "shr1"
   | Shr4 -> "shr4"
   | Shr16 -> "shr16"
+  | Bonus -> "bonus"
 let string_of_op2 = function
   | And -> "and"
   | Or -> "or"

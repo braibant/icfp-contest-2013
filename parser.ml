@@ -28,6 +28,7 @@ let () = EXTEND LambdaGram
   | "shr1" -> Shr1
   | "shr4" -> Shr4
   | "shr16" -> Shr16
+  | "bonus" -> Bonus
   ]];
   op2: [[
     "and" -> And

@@ -27,6 +27,7 @@ let  ho_evalv sigma args env =
 		    | Shr1 -> Array.map (fun e -> shift_right_logical e 1) e
 		    | Shr4 -> Array.map (fun e -> shift_right_logical e 4) e
 		    | Shr16 -> Array.map (fun e ->shift_right_logical e 16) e
+		    | _ -> assert false 
 		    end
     | Op2 (_, [], _) -> assert false
     | Op2 (op,e::q,_) -> let e = aux  e in

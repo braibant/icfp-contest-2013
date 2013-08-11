@@ -9,7 +9,7 @@ type exp = private
 | Op2 of op2 * exp list * tag
 | Cst of int64 (* Value *) * exp (* example of realisation *) * tag
 and tag
-and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16
+and op1 = | Not | Shl1 | Shr1 | Shr4 | Shr16 | Bonus
 and op2 = | And | Or | Xor | Plus
 and ident = int
 
