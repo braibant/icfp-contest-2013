@@ -198,8 +198,8 @@ let list_problems () =
     | [] -> []
     | hd::tl -> if n = 0 then [] else hd :: take (n - 1) tl in
   let problems_sorted = unsolved_problems_sorted () in
-  let easy = take 10 problems_sorted in
-  print_endline "10 easy problems:";
+  let easy = take 100 problems_sorted in
+  print_endline "100 easy problems:";
   List.iter print_problem easy;
   print_newline ()
 

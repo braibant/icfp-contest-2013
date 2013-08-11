@@ -108,7 +108,7 @@ let size x =
     | Op2 (_, l, _) ->
 	List.length l - 1 +
 	  List.fold_left (fun acc e -> aux e + acc) 0 l
-    | Cst (_, _, _) -> assert false
+    | Cst (_, _, _) -> 1
   in aux x + 1
 
 let holes x =
