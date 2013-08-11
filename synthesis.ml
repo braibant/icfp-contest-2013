@@ -34,6 +34,9 @@ let eval p sigma args =
   try Eval.h_evalv p sigma args
   with e -> 
     Print.print_exp_nl p;  
+    Printf.printf "Array.length sigma %i\n" (Array.length sigma);
+    Printf.printf "Array.length sigma.(0) %i\n" (Array.length sigma.(0));
+    Printf.printf "Array.length args %i" (Array.length args);
     raise e
       
 module PrioQueue = struct
@@ -112,7 +115,7 @@ let fit (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list 
   
   let rec aux i acc : Term.exp array list =
     if i = n then 
-      (if Vect.equal (eval c sigma1 src) tgt
+      (if try Vect.equal (eval c sigma1 src) tgt with _ -> true 
        then check (explode sigma2  acc)
        else acc)
     else

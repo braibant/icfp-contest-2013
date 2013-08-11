@@ -4,6 +4,7 @@ open Int64
 (* the most general evaluation function takes as arguments an
    environment for the bound varibles and a substituion for holes. *)
 let map2 f a b = 
+  assert (Array.length a = Array.length b);
   Array.mapi (fun i a -> f a b.(i)) a
       
 (* evalv + holes + open terms (for folds) *)
@@ -40,11 +41,13 @@ let  ho_evalv sigma args env =
       let a = aux a in 
       let b = aux b in 
       let c = aux c in 
+      assert (Array.length a = Array.length b && Array.length a = Array.length c);
       Array.init (Array.length a) (fun i ->
 	if a.(i) = 0L then b.(i) else c.(i)
       ) 
     | Hole (n,false) -> 
-      (try sigma.(n) with _ -> failwith (Printf.sprintf "sigma %i %i" (Array.length sigma) n))
+      (try sigma.(n)
+       with _ -> failwith (Printf.sprintf "sigma %i %i" (Array.length sigma) n))
     | Hole (n,_) -> assert false 
     | Fold (e0,e1,e2,_) -> 
       let e0 = ref (aux e0) in 
