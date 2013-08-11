@@ -102,7 +102,7 @@ exception Found of Term.exp array list
 let fit ?(time_budget=10.) (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list  =
   let n = Term.holes c in 
   let sigma1 = Array.create n src in 
-  let sigma2 = Array.create n (Term.Notations.c0) in
+  let sigma2 = Array.create n [] in
 
   (* early termination detection *)
   let check l = if List.length l > 2 then raise (Found l) else l in 
@@ -113,14 +113,15 @@ let fit ?(time_budget=10.) (space: Term.exp list VMap.t) src (tgt: Vect.t) c : T
     else
       if i = n then 
 	(if try Vect.equal (eval c sigma1 src) tgt with _ -> true 
-	  then (* check (explode sigma2  acc) *)
-	    check (sigma2::acc)
+	  then 
+	    check (explode sigma2  acc)
+	    (* check (sigma2::acc) *)
 	  else acc)
       else
 	VMap.fold 
 	  (fun k t acc ->
 	    sigma1.(i) <- k;
-	    sigma2.(i) <- List.hd t;
+	    sigma2.(i) <- t;
 	    aux (i+1) acc
 	  ) space acc
   in 
