@@ -129,7 +129,7 @@ let rec holes =function
   | If0 (e,f,g,_) -> holes e + holes f + holes g
   | Fold (e,f,g, _) -> holes e + holes f + holes g
   | Op1 (_, e, _) -> holes e
-  | Op2 (_, l, _) -> List.fold_left (fun acc e -> acc + holes e) min_int l
+  | Op2 (_, l, _) -> List.fold_left (fun acc e -> acc + holes e) 0 l
   | Cst (_, _, _) -> 0
 
   
