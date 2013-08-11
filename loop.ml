@@ -31,7 +31,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   (* initialize the term array *) 
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
-      if (n < 8 || tfold) && not !Config.synthesis then
+      if (n < 8 || tfold) || not !Config.synthesis then
 	Array.of_list 
 	  (if tfold then Generator.generate_tfold n ops
 	   else Generator.generate n ops)
@@ -247,7 +247,6 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       Printf.printf "all initial terms\n";
       Array.iter Print.print_exp_nl p.terms;
       iloop p log
-
     | _ ->
       iloop p log
 	
