@@ -14,6 +14,8 @@ let teraram = ref false
 
 let quotient = ref true
 
+let bypass = ref false
+
 type source =
 | Train_offline
 | Train_online
@@ -80,4 +82,5 @@ let args =
     "--no-quotient", Clear quotient, " disable quotienting";
 
     "--pause-after-problem", Set_int pause_time_after_problem, "INT sleep the given number of seconds after each problem (default 0)";
+    "--bypass", Set bypass, " disbale all interactive queries"
   ]

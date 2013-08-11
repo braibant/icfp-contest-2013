@@ -5,12 +5,14 @@ let begin_end_msg msg f =
   result
 
 let ask_confirmation () =
-  print_endline "Confirm? y/n";
-  match read_line () with
-    | "y" | "Y" | "yes" -> `Yes
-    | "n" | "N" | "no" -> `No
-    | other -> `Other other
-
+  if ! Config.bypass then `Yes else
+    begin
+      print_endline "Confirm? y/n";
+      match read_line () with
+      | "y" | "Y" | "yes" -> `Yes
+      | "n" | "N" | "no" -> `No
+      | other -> `Other other
+    end
 let write_json_to_file file json =
   Yojson.Basic.to_file ~std:true file json
 
