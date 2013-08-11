@@ -13,10 +13,10 @@ let quotient_list li =
       quotient (if List.mem Sat.Unsat equivs then acc else h :: acc) tl
   in quotient [] li
 
-let discriminate set discr =
+let discriminate set discr holes =
   let h = Hashtbl.create 100 in
   List.iter (fun e ->
-    let k = Array.map (Eval.eval e) discr in
+    let k = Array.map (Eval.eval_with_holes holes e) discr in
     let li = try Hashtbl.find h k with Not_found -> [] in
     Hashtbl.replace h k (e :: li)) set;
   Utils.hashtbl_values h
@@ -36,14 +36,15 @@ let discr_from_sat list =
   Array.of_list keys
 
 let quotient set =
+  let holes = Array.init 20 (fun _ -> Term.rnd64 ()) in
   let discr = Array.init 100 (fun _ -> Term.rnd64 ()) in
-  let subsets = discriminate set discr in
+  let subsets = discriminate set discr holes in
   let handle subset =
     let len = List.length subset in
     if len < 10 then quotient_list subset
     else begin
       let discr = discr_from_sat subset in
-      let subsubsets = discriminate subset discr in
+      let subsubsets = discriminate subset discr holes in
       if false (* debug *) then begin
         Printf.printf "list %d was split into %s\n" len
           (String.concat "," (List.map (fun l -> string_of_int (List.length l))
@@ -74,6 +75,5 @@ let test ~size_terms ~size_contexts =
   Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
   ()
 
-(*
-let () = test ~size_terms:6 ~size_contexts:4
-*)
+
+(* let () = test ~size_terms:6 ~size_contexts:4 *)
