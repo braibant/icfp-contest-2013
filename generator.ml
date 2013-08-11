@@ -182,7 +182,7 @@ let generate, generate_tfold, generate_novar,generate_context =
 	  ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
           let res_len = Array.length res in
           let res =
-            if size >= 8 || true then res
+            if (* unplug quotient here! *) false then res
             else begin
               let msg = Printf.sprintf "quotient gen %d" size in
               let quotient =
