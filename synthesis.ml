@@ -2,6 +2,32 @@ module IMap = Map.Make (struct type t = int64 let compare = Int64.compare end)
 module VMap = Map.Make(Vect)
 module VSet = Set.Make(Vect)
 
+module Constraints = struct
+  type t =   (int64 IMap.t) ref
+
+  let map = ref IMap.empty 
+
+  let is_empty () = IMap.is_empty !map
+  let to_vect () = 
+    let l = IMap.bindings !map in 
+    let n = IMap.cardinal !map in
+    let keys =  Array.create n 0L in
+    let values =  Array.create n 0L in
+    List.iteri (fun i (k,v) -> keys.(i) <- k; values.(i) <- v) l;
+    keys, values
+
+
+  let add k v = map := IMap.add k v !map
+ 
+  let addv keys values =
+    let n = Array.length  keys in
+    for i = 0 to n-1 do
+      add keys.(i) values.(i)
+    done
+
+end
+
+
 (* ensure that the free variables are normalized between 0 and the
    number of free variables... *)
 
@@ -35,14 +61,7 @@ module PrioQueue = struct
     let nholes = Term.holes elt in 
     if nholes < n then   Queue.add elt q.queues.(nholes) else ()
 end
-
-
-
-
-
-  
-   
-   
+      
 let explode (v: 'a list array) acc : 'a array list =
   let rec aux deb i acc =
     if i = Array.length v 
@@ -54,11 +73,11 @@ let explode (v: 'a list array) acc : 'a array list =
 	) v.(i) acc
   in aux [] 0 acc 
 
-(* in fact, all we need is n > 2 possible contexts !!! *)
+(* in fact, all we need is n > 0 possible contexts !!! *)
 exception Found of Term.exp array list
 let fit (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list  =
   let n = Term.holes c in 
-  let sigma1 = Array.create n Vect.zero in 
+  let sigma1 = Array.create n src in 
   let sigma2 = Array.create n ([]) in
 
   (* early termination detection *)
@@ -84,17 +103,19 @@ type t =
   {
     terms: Term.exp array;
     contexts: PrioQueue.t;
-    map: (Term.exp list VMap.t) option ref ; 	(* this field is mutable, because it will be computed only on the first execution of synthesis... *)
+
+    (* this field is mutable, because it will be computed only on the
+       first execution of synthesis... *)
+    map: (Term.exp list VMap.t) option ref ; 	
   }
 
 let synthesis 
     env
-    (keys: int64 array) 
-    (values: int64 array)
     : Term.exp list 
     =
   let terms = env.terms  in
   let contexts = env.contexts in 
+  let keys, values = Constraints.to_vect () in 
   let map = match !(env.map) with
     | None -> 
       let map = ref VMap.empty in 
@@ -106,7 +127,8 @@ let synthesis
 	let img = Eval.evalv terms.(i) keys in 
 	add img terms.(i)
       done; 
-      Printf.printf "synthesis discriminate map built (card:%i)\n%!" (VMap.cardinal !map);
+      Printf.printf "synthesis discriminate map built (card:%i)\n%!" 
+	(VMap.cardinal !map);
       env.map := Some !map;
       !map
     | Some map -> map
@@ -125,7 +147,7 @@ let synthesis
     in
     fun () -> 
       aux [] !Config.batch_size
-	   
+	
   in
 
   let cmap (c: Term.exp) : Term.exp list  =
@@ -142,7 +164,7 @@ let synthesis
     if List.length res > 1 then res else  aux res
   in 
   aux []
-  
+    
 let generate sizeT sizeE ops =
   Printf.printf "synthesis:  t %i e %i\n%!" sizeT sizeE;
   let terms = Generator.generate ~force_fold:false sizeT ~exact:false ops in
@@ -152,4 +174,4 @@ let generate sizeT sizeE ops =
   let queue = PrioQueue.create () in
   Array.iter (fun elt -> PrioQueue.add elt queue) contexts;
   {terms; contexts= queue; map = ref None}
-  
+    
