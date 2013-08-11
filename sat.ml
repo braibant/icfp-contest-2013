@@ -194,7 +194,7 @@ let encode_formula state env t =
 	if Int64.logand 1L (Int64.shift_right_logical v i) = 1L then
 	  -zero_var
 	else zero_var)
-    | Hole n ->
+    | Hole (n, _b) ->
       begin match hole_vars.(n) with
         | Some res -> res
         | None ->
