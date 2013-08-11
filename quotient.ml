@@ -13,41 +13,49 @@ let quotient_list li =
       quotient (if List.mem Sat.Unsat equivs then acc else h :: acc) tl
   in quotient [] li
 
-let quotient set =
-  let discr = Array.init 100 (fun _ -> Term.rnd64 ()) in
+let discriminate set discr =
   let h = Hashtbl.create 100 in
-  Array.iter (fun e ->
+  List.iter (fun e ->
     let k = Array.map (Eval.eval e) discr in
     let li = try Hashtbl.find h k with Not_found -> [] in
     Hashtbl.replace h k (e :: li)) set;
-  Hashtbl.fold (fun k es qs -> quotient_list es :: qs) h []
-            
-(*
-let terms =
-  Array.init (n+1) (fun i ->
-    if i < 2 then [| |]
-    else
-      Utils.begin_end_msg ("computing terms " ^ string_of_int i) begin fun () ->
-        Array.of_list (Generator.generate i ops)
-      end
-  )
+  Utils.hashtbl_values h
 
-let nterms = Array.map Array.length terms
-let total_nterms = Array.fold_left (+) 0 nterms
+let discr_from_sat list =
+  let n = List.length list in
+  let pairs = ref [] in
+  for i = 0 to 10 do
+    let pair = List.nth list (Random.int n), List.nth list (Random.int n) in 
+    pairs := pair :: !pairs;
+  done;
+  let sat_results = Sat.discriminate_with_holes !pairs in
+  let get_result = function
+    | Sat.Unsat | Sat.Unknown -> []
+    | Sat.Sat (input, holes) -> [input] in
+  let keys = List.concat (List.map get_result sat_results) in
+  Array.of_list keys
 
-let q2 = quotient terms.(2);;
-let q3 = quotient terms.(3);;
-let q4 = quotient terms.(4);;
-let q5 = Utils.time "quotient 5" (fun () -> quotient terms.(5));;
-let q6 = Utils.time "quotient 6" (fun () -> quotient terms.(6));;
-
-let terms26 =
-  Array.of_list
-    (List.concat
-       (List.map (fun n -> Array.to_list terms.(n)) [2;3;4;5;6]))
-
-let q26 = quotient terms26;;
-*)
+let quotient set =
+  let discr = Array.init 100 (fun _ -> Term.rnd64 ()) in
+  let subsets = discriminate set discr in
+  let handle subset =
+    let len = List.length subset in
+    if len < 10 then quotient_list subset
+    else begin
+      let discr = discr_from_sat subset in
+      let subsubsets = discriminate subset discr in
+      if false (* debug *) then begin
+        Printf.printf "list %d was split into %s\n" len
+          (String.concat "," (List.map (fun l -> string_of_int (List.length l))
+                                subsubsets))
+      end;
+      let sub_handle subsubset =
+        if false (* can have size condition here *) then subsubset
+        else quotient_list subsubset in
+      List.concat (List.map sub_handle subsubsets)
+    end
+  in
+  List.concat (List.map handle subsets)  
 
 let test ~size_terms ~size_contexts =
   let terms =
@@ -58,12 +66,14 @@ let test ~size_terms ~size_contexts =
   Printf.printf "contexts: %i\n%!" (Array.length contexts);
   let qterms = Utils.time "qterms" (fun () ->
     Utils.begin_end_msg "qterms" (fun () ->
-      quotient terms)) in
+      quotient (Array.to_list terms))) in
   Printf.printf "qterms: %i\n%!" (List.length qterms);
   let qcontexts = Utils.time "qcontexts" (fun () ->
     Utils.begin_end_msg "qcontexts" (fun () ->
-      quotient contexts)) in
+      quotient (Array.to_list contexts))) in
   Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
   ()
 
-let () = test ~size_terms:5 ~size_contexts:4
+(*
+let () = test ~size_terms:6 ~size_contexts:4
+*)
