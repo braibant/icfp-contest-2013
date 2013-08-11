@@ -35,9 +35,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   (* initialize the term array *) 
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
-      if (n < 8 || tfold) || not !Config.synthesis then
-	if tfold then Generator.generate_tfold n ops
-	else Generator.generate n ops
+      if (n < 8 || Generator.OSet.mem Term.Foldo ops) || not !Config.synthesis then
+	if tfold then Generator.generate_tfold (min !Config.search_max n) ops
+	else Generator.generate (min !Config.search_max n) ops
       else
 	begin
 	  (if Synthesis.Constraints.is_empty ()
@@ -121,7 +121,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       in
       let pairs = ref [] in
       let n = size p in
-      for i = 0 to 6 do (* Increase 6 to whatever if there are many cores *)
+      for i = 0 to if !Config.teraram then 20 else 6 do (* Increase 6 to whatever if there are many cores *)
 	pairs := (get_nth (Random.int n), get_nth (Random.int n)) :: !pairs
       done;
       keys := (Sat.discriminate !pairs) @ !keys

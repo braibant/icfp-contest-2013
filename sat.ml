@@ -43,8 +43,8 @@ let run_minisat problems =
       close_out chan;
       let out_file_name = Filename.temp_file "minisat" ".out" in
       let cmd =
-	Printf.sprintf "./minisat_static -rnd-seed=%d -verb=0 -cpu-lim=1 -mem-lim=100 %s %s > /dev/null"
-	  (Random.bits ()) in_file_name out_file_name
+	Printf.sprintf "./minisat_static -rnd-seed=%d -verb=0 -cpu-lim=1 -mem-lim=%d %s %s > /dev/null"
+	  (Random.bits ()) (if !Config.teraram then 10000 else 100) in_file_name out_file_name
       in
       (* Printf.printf "%s\n" cmd; *)
       (Unix.open_process_out cmd, in_file_name, out_file_name, problem))
