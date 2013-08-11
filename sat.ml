@@ -220,29 +220,32 @@ let int64_of_var64 data var64 =
 (* this function handles single pairs to discriminate, and accept
    contexts with holes; when Sat, it will return a valuation for the input,
    and for each hole *)
-let distinct t1 t2 = 
-  let state = init_state () in
-  let input = new_64var state in
-  let env = [|input|] in
-  let nb_holes = max (Term.holes t1) (Term.holes t2) in
-  let holes = Array.init nb_holes (fun _ -> new_64var state) in
-  let enc1 = encode_formula state env holes t1 in
-  let enc2 = encode_formula state env holes t2 in
-  add_diff_clause state enc1 enc2;
-  let minisat_result = run_minisat [state] in
-  if List.length minisat_result > 1 then
-    failwith "Sat.disctint: incoherent result size from run_minisat";
-  let minisat_result = List.hd minisat_result in
-  match minisat_result with
-    | Sat data ->
-      let discr_input = [|int64_of_var64 data input|] in
-      let discr_holes = Array.map (fun v -> [|int64_of_var64 data v|]) holes in
-      (* Here I don't know how to use Eval.foo to verify that
-         the discriminating value (and hole values) are indeed correct *)
-      ignore discr_input; ignore discr_holes;
-      Sat (discr_input, discr_holes)
-    | Unsat -> Unsat
-    | Unknown -> Unknown
+let discriminate_with_holes pairs = 
+  let sat_problem (t1,t2) =
+    let state = init_state () in
+    let input = new_64var state in
+    let env = [|input|] in
+    let nb_holes = max (Term.holes t1) (Term.holes t2) in
+    let holes = Array.init nb_holes (fun _ -> new_64var state) in
+    let enc1 = encode_formula state env holes t1 in
+    let enc2 = encode_formula state env holes t2 in
+    add_diff_clause state enc1 enc2;
+    (state, (t1, t2, input, holes)) in
+  let problem_states, problem_vars = List.split (List.map sat_problem pairs) in
+  let minisat_results = run_minisat problem_states in
+  let handle_result result (t1, t2, input, holes) =
+    match result with
+      | Sat data ->
+        let discr_input = [|int64_of_var64 data input|] in
+        let discr_holes = Array.map (fun v -> [|int64_of_var64 data v|]) holes in
+        (* Here I don't know how to use Eval.foo to verify that
+           the discriminating value (and hole values) are indeed correct *)
+        ignore discr_input; ignore discr_holes;
+        Sat (discr_input, discr_holes)
+      | Unsat -> Unsat
+      | Unknown -> Unknown
+  in
+  List.map2 handle_result minisat_results problem_vars
 
 (* this function takes a (term*term) list as input,
    but expects only terms, no contexts with holes *)

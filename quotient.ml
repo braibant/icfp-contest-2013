@@ -2,15 +2,15 @@ let ops = Generator.all_ops
 let n = 8
 
 let equiv t1 t2 =
-  Sat.distinct t1 t2 = Sat.Unsat
+  Sat.discriminate_with_holes [(t1, t2)] = [Sat.Unsat]
 
 let quotient_list li =
   let rec quotient acc = function
     | [] -> acc
     | h::tl ->
-      quotient
-        (if List.exists (equiv h) acc then acc
-         else h :: acc) tl
+      let pairs = List.map (fun x -> (x,h)) acc in
+      let equivs = Sat.discriminate_with_holes pairs in
+      quotient (if List.mem Sat.Unsat equivs then acc else h :: acc) tl
   in quotient [] li
 
 let quotient set =
@@ -50,20 +50,20 @@ let q26 = quotient terms26;;
 *)
 
 let test ~size_terms ~size_contexts =
-  let terms = Array.of_list
-    (Generator.generate ~force_fold:false size_terms  ~exact:false ops) in
+  let terms =
+    Generator.generate ~force_fold:false size_terms  ~exact:false ops in
   Printf.printf "terms: %i\n%!" (Array.length terms);
   let contexts = (Generator.generate_context size_contexts ops
                     ([Term.Notations.hole 0 false])) in 
-  Printf.printf "contexts: %i\n%!" (List.length contexts);
+  Printf.printf "contexts: %i\n%!" (Array.length contexts);
   let qterms = Utils.time "qterms" (fun () ->
     Utils.begin_end_msg "qterms" (fun () ->
       quotient terms)) in
   Printf.printf "qterms: %i\n%!" (List.length qterms);
   let qcontexts = Utils.time "qcontexts" (fun () ->
     Utils.begin_end_msg "qcontexts" (fun () ->
-      quotient (Array.of_list contexts))) in
+      quotient contexts)) in
   Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
   ()
 
-let () = test ~size_terms:5 ~size_contexts:3
+let () = test ~size_terms:5 ~size_contexts:4
