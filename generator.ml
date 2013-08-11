@@ -185,6 +185,7 @@ let generate, generate_tfold, generate_novar,generate_context =
             if res_len > 100_000
               || in_context
               || fold_state = Inside
+              || not !Config.quotient
             (* unplug quotient here! *)
             then res
             else begin

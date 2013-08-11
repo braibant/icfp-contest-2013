@@ -12,6 +12,8 @@ let problems_file = ref "problems"
 let last_training_file = ref "last_training"
 let teraram = ref false
 
+let quotient = ref true
+
 type source =
 | Train_offline
 | Train_online
@@ -71,4 +73,7 @@ let args =
     "-j", Int (fun i -> jobs := i;   Parmap.set_default_ncores i), " number of cores";
     "--context-size", Set_int context_size, " set max context size";
     (* "--batch", Set_int batch_size, " size of batches to be dispatched between the cores" *)
+
+    "--quotient", Set quotient, " set quotienting (enabled by default)";
+    "--no-quotient", Clear quotient, " disable quotienting";
   ]
