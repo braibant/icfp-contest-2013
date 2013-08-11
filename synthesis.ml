@@ -109,7 +109,7 @@ let fit ?(time_budget=10.) (space: Term.exp list VMap.t) src (tgt: Vect.t) c : T
   let start_time = Unix.gettimeofday () in 
   let rec aux i acc : Term.exp array list =
     if Unix.gettimeofday () -. start_time > time_budget
-    then acc 
+    then raise (Found acc) 
     else
       if i = n then 
 	(if try Vect.equal (eval c sigma1 src) tgt with _ -> true 
@@ -125,6 +125,7 @@ let fit ?(time_budget=10.) (space: Term.exp list VMap.t) src (tgt: Vect.t) c : T
   in 
   try aux 0  []
   with Found l -> l
+
 
 type t =
   {
