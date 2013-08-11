@@ -172,16 +172,17 @@ let synthesis
 	
   in
 
-  let cmap (c: Term.exp) : Term.exp list  =
+  let cmap (c: Term.exp) acc : Term.exp list  =
     let res = fit map keys values c in 
     let res = List.rev_map (fun prg -> Term.subst_holes prg c) res in 
-    res
+    List.rev_append res acc
   in
   let rec aux acc =
     Printf.printf "-%!";
     let b = batch () in 
-    let res = Functory.Cores.map_fold_ac 
-      ~f:(cmap) ~fold:List.rev_append [] b in 
+    (* let res = Functory.Cores.map_fold_ac  *)
+    (*   ~f:(cmap) ~fold:List.rev_append [] b in  *)
+    let res = Parmap.parfold ~chunksize:4 cmap  (Parmap.L b) [] List.rev_append in
     let res = List.rev_append res acc in
     if List.length res > 1 then res else  aux res
   in 

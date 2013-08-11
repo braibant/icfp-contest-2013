@@ -63,6 +63,7 @@ let args =
     "-n", Set_int problem_size, " (idem)";
 
     "-s", Set synthesis, " use synthesis mode";
-    "-j", Int (fun i -> jobs := i;   Functory.Cores.set_number_of_cores i), " number of cores";
+    (* "-j", Int (fun i -> jobs := i;   Functory.Cores.set_number_of_cores i), " number of cores"; *)
+    "-j", Int (fun i -> jobs := i;   Parmap.set_default_ncores i), " number of cores";
     (* "--batch", Set_int batch_size, " size of batches to be dispatched between the cores" *)
   ]
