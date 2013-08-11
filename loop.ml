@@ -23,7 +23,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     then None
     else
       Utils.begin_end_msg "computing env" begin fun () ->
-      Some (Synthesis.generate 7 (n- 5) ops) 
+      Some (Synthesis.generate 8 (n- 6) ops) 
       end
 
   let get_env () = match env with None -> assert false | Some env -> env 
@@ -31,16 +31,15 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   (* initialize the term array *) 
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
-      if (n < 8 || tfold) && not !Config.synthesis then
-	Array.of_list 
-	  (if tfold then Generator.generate_tfold n ops
-	   else Generator.generate n ops)
+      if (n < 8 || tfold) || not !Config.synthesis then
+	if tfold then Generator.generate_tfold n ops
+	else Generator.generate n ops
       else
-      let keys = Array.init 256 (fun _ -> rnd64 ()) in 
-      let values = O.eval keys in 
-      let v = Array.of_list (Synthesis.synthesis (get_env ()) keys values) in 
-      Printf.printf "synthesis generated %i terms\n" (Array.length v);
-      v
+	let keys = Array.init 256 (fun _ -> rnd64 ()) in 
+	let values = O.eval keys in 
+	let v = Array.of_list (Synthesis.synthesis (get_env ()) keys values) in 
+	Printf.printf "synthesis generated %i terms\n" (Array.length v);
+	v
     end 
     in
     let sieve = Bitv.create (Array.length terms) true in
@@ -101,6 +100,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 
   (* find values that discriminate using sat solving *)
   let best_sat (p:t ) =
+    Utils.begin_end_msg "BEST_SAT" begin fun () -> 
     let keys = ref [] in
     for j = 0 to 10 do
       let get_nth k =
@@ -128,7 +128,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     Printf.printf "Found %d new discriminants by SAT\n" (List.length keys);
     Array.init 256 (fun i ->
       if i < List.length keys then List.nth keys i else rnd64 ())
-
+    end
   (* if we cannot find values that would make progress, we have to make a guess. *)
     
   let all_equiv (p: t) =
@@ -170,6 +170,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       ) p.sieve;
     !refined, {p with sieve}
 
+  let refine p v a = 
+    Utils.begin_end_msg "REFINE" (fun () -> refine p v a)
+
   let refine1 p v a = 
     refine p [|v|] [|a|] 
 
@@ -184,6 +187,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       Printf.printf "choose failed: regenerate terms\n";
       choose (init ())
 
+  let choose p =
+    Utils.begin_end_msg "CHOOSE" (fun () -> choose p)
 
   let rec message l =
     let open Print in 
@@ -247,7 +252,6 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       Printf.printf "all initial terms\n";
       Array.iter Print.print_exp_nl p.terms;
       iloop p log
-
     | _ ->
       iloop p log
 	

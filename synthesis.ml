@@ -31,6 +31,7 @@ let fit (space: Term.exp list VMap.t) src (tgt: Vect.t) c : Term.exp array list 
   let sigma1 = Array.create n Vect.zero in 
   let sigma2 = Array.create n ([]) in
 
+  (* early termination detection *)
   let check l = if List.length l > 2 then raise (Found l) else l in 
   
   let rec aux i acc : Term.exp array list =
@@ -65,51 +66,71 @@ let synthesis
   let terms = env.terms  in
   let contexts = env.contexts in 
   let map = match !(env.map) with
-  | None -> 
-    let map = ref VMap.empty in 
-    let add c t = 
-      try map := VMap.add c (t :: VMap.find c !map) !map
-      with Not_found -> map := VMap.add c [t] !map
+    | None -> 
+      let map = ref VMap.empty in 
+      let add c t = 
+	try map := VMap.add c (t :: VMap.find c !map) !map
+	with Not_found -> map := VMap.add c [t] !map
+      in
+      for i = 0 to Array.length terms -1 do
+	let img = Eval.evalv terms.(i) keys in 
+	add img terms.(i)
+      done; 
+      Printf.printf "synthesis discriminate map built (card:%i)\n%!" (VMap.cardinal !map);
+      env.map := Some !map;
+      !map
+    | Some map -> map
+  in
+  
+  let batch : unit -> Term.exp list =
+    let rec aux acc =
+      function
+      | 0 -> acc
+      | n -> 
+	try  aux  (Queue.pop contexts :: acc) (n - 1)
+	with Queue.Empty -> 
+	  if acc = [] 
+	  then failwith "contexts depleted"
+	  else acc
     in
-    for i = 0 to Array.length terms -1 do
-      let img = Eval.evalv terms.(i) keys in 
-      add img terms.(i)
-    done; 
-    Printf.printf "synthesis discriminate map built (card:%i)\n%!" (VMap.cardinal !map);
-    env.map := Some !map;
-    !map
-  | Some map -> map
+    fun () -> 
+      aux [] !Config.batch_size
+	   
   in
-  let rec aux acc = 
-    try 
-      let c = Queue.pop contexts in 
-      let res = fit map keys values c in 
-      let res = List.map (fun prg -> Term.subst_holes prg c) res in 
-      let res = List.rev_append res acc in
-      if List.length res > 2 then res else  aux res
 
-    with Queue.Empty -> failwith "contexts depleted"
+  let cmap (c: Term.exp) : Term.exp list  =
+    let res = fit map keys values c in 
+    let res = List.rev_map (fun prg -> Term.subst_holes prg c) res in 
+    res
   in
-  aux [] 
+  let rec aux acc =
+    Printf.printf "-%!";
+    let b = batch () in 
+    let res = Functory.Cores.map_fold_ac 
+      ~f:(cmap) ~fold:List.rev_append [] b in 
+    let res = List.rev_append res acc in
+    if List.length res > 1 then res else  aux res
+  in 
+  aux []
+  (* let rec aux acc =  *)
+  (*   try  *)
+  (*     let c = Queue.pop contexts in  *)
+  (*     let res = fit map keys values c in  *)
+  (*     let res = List.map (fun prg -> Term.subst_holes prg c) res in  *)
+  (*     let res = List.rev_append res acc in *)
+  (*     if List.length res > 2 then res else  aux res *)
+
+  (*   with Queue.Empty -> failwith "contexts depleted" *)
+  (* in *)
+  (* aux []  *)
   
 let generate sizeT sizeE ops =
   Printf.printf "synthesis:  t %i e %i\n%!" sizeT sizeE;
-  let terms = Array.of_list (Generator.generate ~force_fold:false sizeT ~exact:false ops) in
+  let terms = Generator.generate ~force_fold:false sizeT ~exact:false ops in
   Printf.printf "terms: %i\n%!" (Array.length terms);
-  let contexts = (Generator.generate_context sizeE ops ([Term.Notations.hole 0 false])) in
-  Printf.printf "contexts: %i\n%!" (List.length contexts);
+  let contexts = Generator.generate_context sizeE ops ([Term.Notations.hole 0 false]) in
+  Printf.printf "contexts: %i\n%!" (Array.length contexts);
   let queue = Queue.create () in
-  List.iter (fun elt -> Queue.add elt queue) contexts;
+  Array.iter (fun elt -> Queue.add elt queue) contexts;
   {terms; contexts= queue; map = ref None}
   
-
-(* let main sizeT sizeE ops  = *)
-(*   Printf.printf "synthesis:  t %i e %i\n%!" sizeT sizeE; *)
-(*   let terms = Array.of_list (Generator.generate ~force_fold:false sizeT ~exact:false ops) in *)
-(*   Printf.printf "terms: %i\n%!" (Array.length terms); *)
-(*   let contexts = (Generator.generate_context sizeE ops ([Term.Notations.hole 0 false])) in  *)
-(*   Printf.printf "contexts: %i\n%!" (List.length contexts); *)
-(*   (\* List.iter Print.print_exp_nl contexts; *\) *)
-(*   synthesis terms (contexts)   *)
- 
-
