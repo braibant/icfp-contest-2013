@@ -9,14 +9,14 @@ let map2 f a b =
 (* evalv + holes + open terms (for folds) *)
 let  ho_evalv sigma args env =  
   let size = Array.length args in 
-  let ffl = Vect.mk_size size 0xFFL in 
-  let zero =  Vect.mk_size size 0L  in 
-  let one = Vect.mk_size size 1L  in 
+  let ffl = Vect.mk size 0xFFL in 
+  let zero =  Vect.mk size 0L  in 
+  let one = Vect.mk size 1L  in 
   let rec aux = 
     function
     | C0 -> zero
     | C1 -> one 
-    | Cst (i,_,_) -> Vect.mk_size size i
+    | Cst (i,_,_) -> Vect.mk size i
     | Var id -> env.(id)
     | Op1 ([], _,_) -> assert false
     | Op1 (op::q,e,_) -> let e = aux (Term.__op1 q e) in 
@@ -64,7 +64,7 @@ let  ho_evalv sigma args env =
 
 (* evalv + holes *)
 let h_evalv p sigma args =
-  let env = Array.create 3 (Vect.mk_size (Array.length args) 0L) in 
+  let env = Array.create 3 (Vect.mk (Array.length args) 0L) in 
   env.(0) <- args;
   ho_evalv sigma args env p
 

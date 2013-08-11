@@ -30,10 +30,10 @@ end
 (* ensure that the free variables are normalized between 0 and the
    number of free variables... *)
 
-let eval a b c = 
-  try Eval.h_evalv a b c
+let eval p sigma args = 
+  try Eval.h_evalv p sigma args
   with e -> 
-    Print.print_exp_nl a;  
+    Print.print_exp_nl p;  
     raise e
       
 module PrioQueue = struct
