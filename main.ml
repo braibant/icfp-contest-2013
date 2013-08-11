@@ -229,8 +229,7 @@ let solve_easy_problems max_size =
   (* we only attack problems without fold, but now accept tfold *)
   let has_fold problem =
     let open Protocol.Problem.Response in
-    not (List.mem "tfold" problem.operators)
-    (* List.mem "fold" problem.operators *)
+    List.mem "fold" problem.operators
     (* || List.mem "tfold" problem.operators *)
   in
   let problems = List.filter (fun p -> not (has_fold p)) problems in
