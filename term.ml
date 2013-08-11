@@ -179,11 +179,16 @@ module Notations = struct
   let shr16 x = op1 Shr16 x
 
   (* binop *)
+  let unit_of_op2 = function
+    | And -> ~~ c0
+    | Or | Plus | Xor -> c0
+
   let rec op2 op x y =
-    match x with
-    | Op2 (op', l, _) when op = op' ->
+    match x, op with
+    | Op2 (op', l, _), _ when op = op' ->
 	List.fold_right (fun e acc -> op2 op e acc) l y
-    | C0 -> y
+    | C0, (Or | Xor | Plus) -> y
+    | Op1 ([Not], C0, _), And -> y
     | _ ->
 	let rec insert e l =
 	  match l with
@@ -199,13 +204,14 @@ module Notations = struct
 	  | l -> e::l
 	in
 	let ly =
-	  match y with
-	  | Op2 (op', l, _) when op = op' -> l
-	  | C0 -> []
-	  | t -> [t]
+	  match y, op with
+	  | Op2 (op', l, _), _ when op = op'-> l
+	  | C0, (Or | Xor | Plus) -> []
+	  | Op1 ([Not], C0, _), And -> []
+	  | t, _ -> [t]
 	in
 	match insert x ly with
-	| [] -> assert (op = Xor); c0
+	| [] -> unit_of_op2 op
 	| [e] -> e
 	| l -> HC.hashcons (Op2 (op, l, -1))
 
@@ -227,7 +233,7 @@ let __op1 ops x =
 
 let __op2 op l =
   match l with
-  | [] -> Notations.c0
+  | [] -> Notations.unit_of_op2 op
   | [e] -> e
   | _ -> HC.hashcons (Op2 (op,l,-1))
 
@@ -240,7 +246,8 @@ let subst_holes sigma t =
     | Op1 (o , e, _) ->
 	List.fold_right (fun o acc -> Notations.op1 o acc) o (aux e)
     | Op2 (o , l, _) ->
-	List.fold_right (fun e acc -> Notations.op2 o (aux e) acc) l Notations.c0
+	List.fold_right (fun e acc -> Notations.op2 o (aux e) acc) l
+	  (Notations.unit_of_op2 o)
     | Cst (_, _, _) as e -> e
   in aux t
 
@@ -254,7 +261,8 @@ let renumber_holes t =
   | Op1 (o , e, _) ->
       List.fold_right (fun o acc -> Notations.op1 o acc) o (aux e)
   | Op2 (o , l, _) ->
-      List.fold_right (fun e acc -> Notations.op2 o (aux e) acc) l Notations.c0
+      List.fold_right (fun e acc -> Notations.op2 o (aux e) acc) l
+	(Notations.unit_of_op2 o)
   | Cst (_, _, _) as e -> e
   in 
 aux t

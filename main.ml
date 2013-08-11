@@ -106,14 +106,14 @@ let play_online problem secret =
 let play_training pb =
   let open Protocol.Training in 
     let secret = Parser.prog_of_string (pb.Response.challenge) in 
-    Printf.printf "size of the secret:%i\n%!" (Term.size secret);
+    Printf.printf "size of the secret:%i\n%!" (pb.Response.size);
     Printf.printf "id of the secret:%s\n%!" (pb.Response.id);
     Printf.printf "secret:%s\n%!" (pb.Response.challenge);
     Print.print_exp_nl secret;
 
   let problem = {
     id = pb.Response.id;
-    size = Term.size secret;
+    size = pb.Response.size;
     operators = Generator.operators secret;
     tfold = List.mem "tfold" pb.Response.operators
   } in
@@ -220,7 +220,8 @@ let solve_easy_problems max_size =
   (* we only attack problems without fold, but now accept tfold *)
   let has_fold problem =
     let open Protocol.Problem.Response in
-    List.mem "fold" problem.operators
+    not (List.mem "tfold" problem.operators)
+    (* List.mem "fold" problem.operators *)
     (* || List.mem "tfold" problem.operators *)
   in
   let problems = List.filter (fun p -> not (has_fold p)) problems in
