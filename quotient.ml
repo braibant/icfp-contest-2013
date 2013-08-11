@@ -75,5 +75,9 @@ let test ~size_terms ~size_contexts =
   Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
   ()
 
+(* GS: these settings are the largest I tested on my machine;
+   ~size_terms:7 takes 60 seconds
+   ~size_contexts:5 takes 30 seconds
 
-(* let () = test ~size_terms:6 ~size_contexts:4 *)
+   let () = test ~size_terms:7 ~size_contexts:5
+*)
