@@ -16,3 +16,16 @@ let write_json_to_file file json =
 
 let read_json_from_file file =
   Yojson.Basic.from_file ~fname:file file
+
+let time name f =
+  let time_start = Unix.gettimeofday () in
+  let stop () =
+    let time_stop = Unix.gettimeofday () in
+    Printf.printf "time %S: %f\n" name (time_stop -. time_start) in
+  try
+    let result = f () in
+    stop ();
+    result
+  with exn ->
+    stop ();
+    raise exn
