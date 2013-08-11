@@ -93,19 +93,14 @@ let synthesis
 	  then failwith "contexts depleted"
 	  else acc
     in
-    (* let nb_batch = ref 0 in  *)
     fun () -> 
-      (* (if !nb_batch mod 2 = 0 *)
-      (*  then Printf.printf "context batches %i\n%!" !nb_batch  *)
-      (*  else ()); *)
-      (* incr nb_batch;       *)
-      aux [] 4
+      aux [] !Config.batch_size
 	   
   in
 
   let cmap (c: Term.exp) : Term.exp list  =
     let res = fit map keys values c in 
-    let res = List.map (fun prg -> Term.subst_holes prg c) res in 
+    let res = List.rev_map (fun prg -> Term.subst_holes prg c) res in 
     res
   in
   let rec aux acc =
