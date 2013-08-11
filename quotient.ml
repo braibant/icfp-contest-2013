@@ -32,10 +32,12 @@ let discr_from_sat list =
   let keys = List.concat (List.map get_result sat_results) in
   Array.of_list keys
 
-let quotient set =
+let quotient ?(time_budget=10.) set =
   let holes = Array.init 20 (fun _ -> Term.rnd64 ()) in
   let discr = Array.init 100 (fun _ -> Term.rnd64 ()) in
   let subsets = discriminate set discr holes in
+  let start_time = Unix.gettimeofday () in
+  let end_budget = lazy (print_endline "quotient time budget ended") in
   let handle subset =
     let len = List.length subset in
     if len < 10 then quotient_list subset
@@ -48,35 +50,13 @@ let quotient set =
                                 subsubsets))
       end;
       let sub_handle subsubset =
-        if false (* can have size condition here *) then subsubset
+        if false (* can have size condition here *)
+          || (List.length subsubset > 20
+              && Unix.gettimeofday () -. start_time > time_budget
+              && (Lazy.force end_budget; true))
+        then subsubset
         else quotient_list subsubset in
       List.concat (List.map sub_handle subsubsets)
     end
   in
   List.concat (List.map handle subsets)  
-
-(*
-let test ~size_terms ~size_contexts =
-  let terms =
-    Generator.generate ~force_fold:false size_terms  ~exact:false ops in
-  Printf.printf "terms: %i\n%!" (Array.length terms);
-  let contexts = (Generator.generate_context size_contexts ops
-                    ([Term.Notations.hole 0 false])) in 
-  Printf.printf "contexts: %i\n%!" (Array.length contexts);
-  let qterms = Utils.time "qterms" (fun () ->
-    Utils.begin_end_msg "qterms" (fun () ->
-      quotient (Array.to_list terms))) in
-  Printf.printf "qterms: %i\n%!" (List.length qterms);
-  let qcontexts = Utils.time "qcontexts" (fun () ->
-    Utils.begin_end_msg "qcontexts" (fun () ->
-      quotient (Array.to_list contexts))) in
-  Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
-  ()
-*)
-
-(* GS: these settings are the largest I tested on my machine;
-   ~size_terms:7 takes 60 seconds
-   ~size_contexts:5 takes 30 seconds
-
-   let () = test ~size_terms:7 ~size_contexts:5
-*)
