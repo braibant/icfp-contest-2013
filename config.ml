@@ -4,7 +4,7 @@ let logfile = ref "logfile"
 let interactive_mode = ref false 
 let problem_size = ref 4
 let synthesis = ref false
-let batch_size = ref 512
+let jobs = ref 4
 
 let solved_file = ref "solved_problems"
 let problems_file = ref "problems"
@@ -63,6 +63,6 @@ let args =
     "-n", Set_int problem_size, " (idem)";
 
     "-s", Set synthesis, " use synthesis mode";
-    "-j", Int (Functory.Cores.set_number_of_cores), " number of cores";
-    "--batch", Set_int batch_size, " size of batches to be dispatched between the cores"
+    "-j", Int (fun i -> jobs := i;   Functory.Cores.set_number_of_cores i), " number of cores";
+    (* "--batch", Set_int batch_size, " size of batches to be dispatched between the cores" *)
   ]

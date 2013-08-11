@@ -38,6 +38,7 @@ let eval p sigma args =
       
 module PrioQueue = struct
 
+  (* type t = ref Term.exp list *)
   type t =
     {
       content : Term.exp array;
@@ -159,7 +160,8 @@ let synthesis
       !map
     | Some map -> map
   in
-  
+
+  let batch_size = 256 * !Config.jobs  in
   let batch : unit -> Term.exp list =
     let rec aux acc =
       function
@@ -172,7 +174,7 @@ let synthesis
 	  else acc
     in
     fun () -> 
-      aux [] !Config.batch_size
+      aux [] batch_size
 	
   in
 
