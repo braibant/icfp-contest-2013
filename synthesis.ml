@@ -30,14 +30,7 @@ end
 (* ensure that the free variables are normalized between 0 and the
    number of free variables... *)
 
-let eval p sigma args = 
-  try Eval.h_evalv p sigma args
-  with e -> 
-    Print.print_exp_nl p;  
-    Printf.printf "Array.length sigma %i\n" (Array.length sigma);
-    Printf.printf "Array.length sigma.(0) %i\n" (Array.length sigma.(0));
-    Printf.printf "Array.length args %i" (Array.length args);
-    raise e
+let eval p sigma args =  Eval.h_evalv p sigma args
       
 module PrioQueue = struct
 
@@ -136,7 +129,7 @@ type t =
 
     (* this field is mutable, because it will be computed only on the
        first execution of synthesis... *)
-    map: (Term.exp list VMap.t) option ref ; 	
+    (* map: (Term.exp list VMap.t) ref ; 	 *)
   }
 
 let synthesis 
@@ -146,22 +139,20 @@ let synthesis
   let terms = env.terms  in
   let contexts = env.contexts in 
   let keys, values = Constraints.to_vect () in 
-  let map = match !(env.map) with
-    | None -> 
-      let map = ref VMap.empty in 
-      let add c t = 
-	try map := VMap.add c (t :: VMap.find c !map) !map
-	with Not_found -> map := VMap.add c [t] !map
-      in
-      for i = 0 to Array.length terms -1 do
-	let img = Eval.evalv terms.(i) keys in 
-	add img terms.(i)
-      done; 
-      Printf.printf "synthesis discriminate map built (card:%i)\n%!" 
-	(VMap.cardinal !map);
-      env.map := Some !map;
-      !map
-    | Some map -> map
+  
+  let map = 
+    let map = ref VMap.empty in
+    let add c t = 
+      try map := VMap.add c (t :: VMap.find c !map) !map
+      with Not_found -> map := VMap.add c [t] !map
+    in
+    for i = 0 to Array.length terms -1 do
+      let img = Eval.evalv terms.(i) keys in 
+      add img terms.(i)
+    done; 
+    Printf.printf "synthesis discriminate map built (card:%i)\n%!" 
+      (VMap.cardinal !map);
+    !map
   in
 
   let batch_size = 256 * !Config.jobs  in
@@ -204,5 +195,5 @@ let generate sizeT sizeE ops =
   Printf.printf "contexts: %i\n%!" (Array.length contexts);
   let queue = PrioQueue.create contexts in
   (* Array.iter (fun elt -> PrioQueue.add elt queue) contexts; *)
-  {terms; contexts= queue; map = ref None}
+  {terms; contexts= queue}
     
