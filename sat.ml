@@ -74,7 +74,7 @@ let run_minisat problems =
 let new_64var state = Array.init 64 (fun _ -> new_var state)
 
 let encode_formula state env hole_env t =
-  let rec encode = function
+  let rec encode env = function
     | C0 -> Array.make 64 zero_var
     | C1 ->
       let res = Array.make 64 zero_var in
@@ -82,9 +82,9 @@ let encode_formula state env hole_env t =
       res
     | Var x -> env.(x)
     | If0 (a, b, c, _) ->
-      let a = encode a in
-      let b = encode b in
-      let c = encode c in
+      let a = encode env a in
+      let b = encode env b in
+      let c = encode env c in
       let res = new_64var state in
       let is_0 = new_var state in
       add_clause state (is_0::Array.to_list a);
@@ -97,44 +97,44 @@ let encode_formula state env hole_env t =
       done;
       res
     | Fold(a, b, c, _) ->
-      let a = encode a in
-      let acc = ref (encode b) in
+      let a = encode env a in
+      let acc = ref (encode env b) in
       for i = 0 to 7 do
 	let env = Array.make 3 env.(Constants.arg) in
 	env.(Constants.fold_acc) <- !acc;
 	env.(Constants.fold_arg) <- Array.make 64 zero_var;
 	Array.blit a (i*8) env.(Constants.fold_arg) 0 8;
-	acc := encode c
+	acc := encode env c
       done;
       !acc
     | Op1 ([], _, _) -> assert false
     | Op1(Not :: q, a, _) ->
-      let a = encode (Term.__op1 q a) in
+      let a = encode env (Term.__op1 q a) in
       Array.map (fun x -> -x) a
     | Op1(Shl1::q , a, _) ->
-      let a = encode (Term.__op1 q a) in
+      let a = encode env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 0 res 1 63;
       res
     | Op1(Shr1::q, a, _) ->
-      let a = encode (Term.__op1 q a) in
+      let a = encode env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 1 res 0 63;
       res
     | Op1(Shr4::q, a, _) ->
-      let a = encode (Term.__op1 q a) in
+      let a = encode env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 4 res 0 60;
       res
     | Op1(Shr16::q, a, _) ->
-      let a = encode (Term.__op1 q a) in
+      let a = encode env (Term.__op1 q a) in
       let res = Array.make 64 zero_var in
       Array.blit a 16 res 0 48;
       res
     | Op2(_, [], _) -> assert false
     | Op2(And, t::q, _) ->
-      let a = encode t in
-      let b = encode (Term.__op2 And q) in
+      let a = encode env t in
+      let b = encode env (Term.__op2 And q) in
       let res = new_64var state in
       for i = 0 to 63 do
 	add_clause state [-a.(i);-b.(i);res.(i)];
@@ -143,8 +143,8 @@ let encode_formula state env hole_env t =
       done;
       res
     | Op2(Or, t::q, _) ->
-      let a = encode t in
-      let b = encode (Term.__op2 Or q) in
+      let a = encode env t in
+      let b = encode env (Term.__op2 Or q) in
       let res = new_64var state in
       for i = 0 to 63 do
 	add_clause state [a.(i);b.(i);-res.(i)];
@@ -153,8 +153,8 @@ let encode_formula state env hole_env t =
       done;
       res
     | Op2(Xor, t::q, _) ->
-      let a = encode t in
-      let b = encode (Term.__op2 Xor q) in
+      let a = encode env t in
+      let b = encode env (Term.__op2 Xor q) in
       let res = new_64var state in
       for i = 0 to 63 do
 	add_clause state [-a.(i);b.(i);res.(i)];
@@ -164,8 +164,8 @@ let encode_formula state env hole_env t =
       done;
       res
     | Op2(Plus, t::q, _) ->
-      let a = encode t in
-      let b = encode (Term.__op2 Plus q) in
+      let a = encode env t in
+      let b = encode env (Term.__op2 Plus q) in
       let res = new_64var state in
       let carry = Array.init 64 (fun i ->
 	if i = 0 then zero_var else new_var state) in
@@ -199,7 +199,7 @@ let encode_formula state env hole_env t =
         failwith (Printf.sprintf "Sat.encode: hole %d too large" n);
       hole_env.(n)
   in
-  let formula = encode t in
+  let formula = encode env t in
   formula
 
 let add_diff_clause state enc1 enc2 =
