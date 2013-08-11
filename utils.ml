@@ -29,3 +29,6 @@ let time name f =
   with exn ->
     stop ();
     raise exn
+
+let hashtbl_values h =
+  Hashtbl.fold (fun _k v li -> v::li) h []

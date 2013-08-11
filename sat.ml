@@ -236,8 +236,8 @@ let discriminate_with_holes pairs =
   let handle_result result (t1, t2, input, holes) =
     match result with
       | Sat data ->
-        let discr_input = [|int64_of_var64 data input|] in
-        let discr_holes = Array.map (fun v -> [|int64_of_var64 data v|]) holes in
+        let discr_input = int64_of_var64 data input in
+        let discr_holes = Array.map (fun v -> int64_of_var64 data v) holes in
         (* Here I don't know how to use Eval.foo to verify that
            the discriminating value (and hole values) are indeed correct *)
         ignore discr_input; ignore discr_holes;

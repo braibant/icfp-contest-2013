@@ -47,6 +47,21 @@ and sexp_lam2 ((* x, y, *) e) =
     Word (string_of_id Constants.fold_acc);
   ] e
 
+let sexp_compact sexp =
+  let buf = Buffer.create 30 in
+  let rec print = function
+    | Word str -> Buffer.add_string buf str
+    | List li ->
+      Buffer.add_char buf '(';
+      List.iter (fun x -> print x; Buffer.add_char buf ' ') li;
+      Buffer.add_char buf ')'
+  in
+  print sexp;
+  Buffer.contents buf
+
+let to_compact_string exp =
+  sexp_compact (sexp_exp exp)
+
 open PPrint
  
 let rec doc_sexp = function
