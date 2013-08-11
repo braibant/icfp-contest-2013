@@ -2,7 +2,7 @@ let ops = Generator.all_ops
 let n = 8
 
 let equiv t1 t2 =
-  Sat.discriminate [(t1,t2)] = [Sat.Unsat]
+  Sat.distinct t1 t2 = Sat.Unsat
 
 let quotient_list li =
   let rec quotient acc = function
@@ -22,6 +22,7 @@ let quotient set =
     Hashtbl.replace h k (e :: li)) set;
   Hashtbl.fold (fun k es qs -> quotient_list es :: qs) h []
             
+(*
 let terms =
   Array.init (n+1) (fun i ->
     if i < 2 then [| |]
@@ -31,7 +32,6 @@ let terms =
       end
   )
 
-(*
 let nterms = Array.map Array.length terms
 let total_nterms = Array.fold_left (+) 0 nterms
 
@@ -49,10 +49,12 @@ let terms26 =
 let q26 = quotient terms26;;
 *)
 
-let test sizeC sizeT =
-  let terms = Array.of_list (Generator.generate ~force_fold:false sizeT ~exact:false ops) in
+let test ~size_terms ~size_contexts =
+  let terms = Array.of_list
+    (Generator.generate ~force_fold:false size_terms  ~exact:false ops) in
   Printf.printf "terms: %i\n%!" (Array.length terms);
-  let contexts = (Generator.generate_context sizeC ops ([Term.Notations.hole 0 false])) in 
+  let contexts = (Generator.generate_context size_contexts ops
+                    ([Term.Notations.hole 0 false])) in 
   Printf.printf "contexts: %i\n%!" (List.length contexts);
   let qterms = Utils.time "qterms" (fun () ->
     Utils.begin_end_msg "qterms" (fun () ->
@@ -64,4 +66,4 @@ let test sizeC sizeT =
   Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
   ()
 
-(* let () = test 4 2 *)
+let () = test ~size_terms:5 ~size_contexts:3

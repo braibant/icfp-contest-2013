@@ -202,17 +202,50 @@ let encode_formula state env hole_env t =
   let formula = encode t in
   formula
 
-(*
-let equiv t1 t2 = 
+let add_diff_clause state enc1 enc2 =
+  let diff = new_64var state in
+  for i = 0 to 63 do
+    add_clause state [enc1.(i); enc2.(i); -diff.(i)];
+    add_clause state [-enc1.(i); -enc2.(i); -diff.(i)]
+  done;
+  add_clause state (Array.to_list diff)
+
+let int64_of_var64 data var64 =
+  let res = ref 0L in
+  for i = 0 to 63 do
+    if data.(var64.(i)) then res := Int64.logor !res (Int64.shift_left 1L i)
+  done;
+  !res
+
+(* this function handles single pairs to discriminate, and accept
+   contexts with holes; when Sat, it will return a valuation for the input,
+   and for each hole *)
+let distinct t1 t2 = 
   let state = init_state () in
-  let env = [|new_64var state|] in
+  let input = new_64var state in
+  let env = [|input|] in
   let nb_holes = max (Term.holes t1) (Term.holes t2) in
   let holes = Array.init nb_holes (fun _ -> new_64var state) in
   let enc1 = encode_formula state env holes t1 in
   let enc2 = encode_formula state env holes t2 in
-  TO BE CONTINUED...
-*)
+  add_diff_clause state enc1 enc2;
+  let minisat_result = run_minisat [state] in
+  if List.length minisat_result > 1 then
+    failwith "Sat.disctint: incoherent result size from run_minisat";
+  let minisat_result = List.hd minisat_result in
+  match minisat_result with
+    | Sat data ->
+      let discr_input = [|int64_of_var64 data input|] in
+      let discr_holes = Array.map (fun v -> [|int64_of_var64 data v|]) holes in
+      (* Here I don't know how to use Eval.foo to verify that
+         the discriminating value (and hole values) are indeed correct *)
+      ignore discr_input; ignore discr_holes;
+      Sat (discr_input, discr_holes)
+    | Unsat -> Unsat
+    | Unknown -> Unknown
 
+(* this function takes a (term*term) list as input,
+   but expects only terms, no contexts with holes *)
 let discriminate l =
   let pbs =
     List.map (fun (t1, t2) ->
@@ -221,30 +254,22 @@ let discriminate l =
       let no_holes = [||] in
       let enc1 = encode_formula state env no_holes t1 in
       let enc2 = encode_formula state env no_holes t2 in
-      let diff = new_64var state in
-      for i = 0 to 63 do
-	add_clause state [enc1.(i); enc2.(i); -diff.(i)];
-	add_clause state [-enc1.(i); -enc2.(i); -diff.(i)]
-      done;
-      add_clause state (Array.to_list diff);
+      add_diff_clause state enc1 enc2;
       (state, env.(0), t1, t2))
       l
   in
   let res = run_minisat (List.map (fun (x, _, _, _) -> x) pbs) in
-  List.map2 (fun (_, env, t1, t2) res ->
+  List.map2 (fun (_, input, t1, t2) res ->
     match res with
     | Sat data ->
-	let res = ref 0L in
-	for i = 0 to 63 do
-	  if data.(env.(i)) then res := Int64.logor !res (Int64.shift_left 1L i)
-	done;
-	if Eval.eval t1 !res = Eval.eval t2 !res then
+        let res = int64_of_var64 data input in
+	if Eval.eval t1 res = Eval.eval t2 res then
 	  begin
 	    Printf.printf "===== WARNING =====\n";
 	    Printf.printf "Problem in SAT encoding : wrong discriminator\n";
 	    Unknown
 	  end
-	else Sat !res
+	else Sat res
     | Unsat -> Unsat
     | Unknown -> Unknown)
     pbs res
