@@ -304,19 +304,25 @@ type op =
 | Op2o of op2
 
 let op_of_string = function
-  | "not" -> Op1o Not
-  | "shl1" -> Op1o Shl1
-  | "shr1" -> Op1o Shr1
-  | "shr4" -> Op1o Shr4
-  | "shr16" -> Op1o Shr16
-  | "and" -> Op2o And
-  | "or" -> Op2o Or
-  | "xor" -> Op2o Xor
-  | "plus" -> Op2o Plus
-  | "if0" -> If0o
-  | "fold" -> Foldo
-  | "tfold" -> Foldo
-  | op -> failwith (Printf.sprintf "Parser.parse_op: unknown operator %S" op)
+  | "bonus" -> `Bonus
+  | op ->
+    `Op begin
+      match op with
+        | "not" -> Op1o Not
+        | "shl1" -> Op1o Shl1
+        | "shr1" -> Op1o Shr1
+        | "shr4" -> Op1o Shr4
+        | "shr16" -> Op1o Shr16
+        | "and" -> Op2o And
+        | "or" -> Op2o Or
+        | "xor" -> Op2o Xor
+        | "plus" -> Op2o Plus
+        | "if0" -> If0o
+        | "fold" -> Foldo
+        | "tfold" -> Foldo
+        | op ->
+          failwith (Printf.sprintf "Parser.parse_op: unknown operator %S" op)
+    end
 
 let string_of_op1 = function
   | Not -> "not"

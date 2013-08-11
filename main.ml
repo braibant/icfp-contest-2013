@@ -77,15 +77,23 @@ type problem_data = {
   operators : Generator.OSet.t;
   size : int;
   tfold : bool;
+  bonus : bool;
 }
 
-let problem_data p = {
+let problem_data p =
+  let bonus = ref false in
+  let ops =
+    let of_string str = match Term.op_of_string str with
+      | `Bonus -> bonus := true; []
+      | `Op op -> [op] in
+    List.concat (List.map of_string p.Protocol.Problem.Response.operators)
+  in
+  {
   id = p.Protocol.Problem.Response.id;
-  operators =
-    Generator.ops_from_list
-      (List.map Term.op_of_string p.Protocol.Problem.Response.operators);
+  operators = Generator.ops_from_list ops;
   size = p.Protocol.Problem.Response.size;
-  tfold = List.mem "tfold" p.Protocol.Problem.Response.operators
+  tfold = List.mem "tfold" p.Protocol.Problem.Response.operators;
+  bonus = !bonus;
 }
 
 let play_online problem secret =
@@ -115,7 +123,8 @@ let play_training pb =
     id = pb.Response.id;
     size = pb.Response.size;
     operators = Generator.operators secret;
-    tfold = List.mem "tfold" pb.Response.operators
+    tfold = List.mem "tfold" pb.Response.operators;
+    bonus = false;
   } in
   play_online problem (Some secret)
 

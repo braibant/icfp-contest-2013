@@ -70,7 +70,7 @@ type op =
 | Op1o of op1
 | Op2o of op2
 
-val op_of_string : string -> op
+val op_of_string : string -> [ `Bonus | `Op of op ]
 
 val string_of_op1 : op1 -> string
 val string_of_op2 : op2 -> string
