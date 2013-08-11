@@ -37,7 +37,7 @@ let beginning str =
 
 let handle name body =
   let rec loop = function
-    | 0 -> `Try_again_later
+    (* | 0 -> `Try_again_later *)
     | n ->
       let call = new post_raw (addr name) body in
       match (response call) # response_status_code with
