@@ -20,8 +20,8 @@ let add_clause state clause =
     let clause = List.filter ((<>) zero_var) clause in
     state.clauses <- clause :: state.clauses
 
-type sat_result =
-  | Sat of bool array
+type 'a sat_result =
+  | Sat of 'a
   | Unsat
   | Unknown
 
@@ -222,9 +222,9 @@ let discriminate l =
 	  begin
 	    Printf.printf "===== WARNING =====\n";
 	    Printf.printf "Problem in SAT encoding : wrong discriminator\n";
-	    None
+	    Unknown
 	  end
-	else
-	  Some !res
-    | _ -> None)
+	else Sat !res
+    | Unsat -> Unsat
+    | Unknown -> Unknown)
     pbs res

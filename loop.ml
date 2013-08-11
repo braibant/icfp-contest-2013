@@ -97,9 +97,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     let keys = List.sort compare !keys in
     let rec uniq = function
       | [] -> []
-      | None::q -> uniq q
+      | (Unsat | Unknown)::q -> uniq q
       | t::t'::q when t=t' -> uniq (t'::q)
-      | Some t::q -> t::uniq q
+      | Sat t::q -> t::uniq q
     in
     let keys = uniq keys in
     Printf.printf "Found %d new discriminants by SAT\n" (List.length keys);
