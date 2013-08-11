@@ -23,7 +23,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     then None
     else
       Utils.begin_end_msg "computing env" begin fun () ->
-      Some (Synthesis.generate 9 (n- 7) ops) 
+      Some (Synthesis.generate 8 (n- 6) ops) 
       end
 
   let get_env () = match env with None -> assert false | Some env -> env 
@@ -100,6 +100,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 
   (* find values that discriminate using sat solving *)
   let best_sat (p:t ) =
+    begin_end_msg "BEST_SAT" begin fun () -> 
     let keys = ref [] in
     for j = 0 to 10 do
       let get_nth k =
@@ -127,7 +128,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     Printf.printf "Found %d new discriminants by SAT\n" (List.length keys);
     Array.init 256 (fun i ->
       if i < List.length keys then List.nth keys i else rnd64 ())
-
+    end
   (* if we cannot find values that would make progress, we have to make a guess. *)
     
   let all_equiv (p: t) =
@@ -169,6 +170,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       ) p.sieve;
     !refined, {p with sieve}
 
+  let refine p v a = 
+    Utils.begin_end_msg "REFINE" (fun () -> refine p v a)
+
   let refine1 p v a = 
     refine p [|v|] [|a|] 
 
@@ -183,6 +187,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       Printf.printf "choose failed: regenerate terms\n";
       choose (init ())
 
+  let choose p =
+    Utils.begin_end_msg "CHOOSE" (fun () -> choose p)
 
   let rec message l =
     let open Print in 
