@@ -12,7 +12,7 @@ let problems_file = ref "problems"
 let last_training_file = ref "last_training"
 let teraram = ref false
 
-let quotient = ref true
+let quotient = ref false
 
 let bypass = ref false
 
