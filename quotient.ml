@@ -28,7 +28,7 @@ let discr_from_sat list =
   let sat_results = Sat.discriminate_with_holes !pairs in
   let get_result = function
     | Sat.Unsat | Sat.Unknown -> []
-    | Sat.Sat (input, holes) -> [input] in
+    | Sat.Sat (input, holes) -> [input.(0)] in
   let keys = List.concat (List.map get_result sat_results) in
   Array.of_list keys
 

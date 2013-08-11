@@ -228,21 +228,20 @@ let int64_of_var64 data var64 =
 let discriminate_with_holes pairs = 
   let sat_problem (t1,t2) =
     let state = init_state () in
-    let input = new_64var state in
-    let env = [|input|] in
+    let env = Array.init 3 (fun _ -> new_64var state) in
     let nb_holes = max (Term.max_hole t1) (Term.max_hole t2) in
     let holes = Array.init nb_holes (fun _ -> new_64var state) in
     let enc1 = encode_formula state env holes t1 in
     let enc2 = encode_formula state env holes t2 in
     add_diff_clause state enc1 enc2;
-    (state, (t1, t2, input, holes)) in
+    (state, (t1, t2, env, holes)) in
   let problem_states, problem_vars = List.split (List.map sat_problem pairs) in
   let minisat_results = run_minisat problem_states in
-  let handle_result result (t1, t2, input, holes) =
+  let handle_result result (t1, t2, env, holes) =
     match result with
       | Sat data ->
-        let discr_input = int64_of_var64 data input in
-        let discr_holes = Array.map (fun v -> int64_of_var64 data v) holes in
+        let discr_input = Array.map (int64_of_var64 data) env in
+        let discr_holes = Array.map (int64_of_var64 data) holes in
         (* Here I don't know how to use Eval.foo to verify that
            the discriminating value (and hole values) are indeed correct *)
         ignore discr_input; ignore discr_holes;

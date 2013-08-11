@@ -182,7 +182,10 @@ let generate, generate_tfold, generate_novar,generate_context =
 	  ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
           let res_len = Array.length res in
           let res =
-            if res_len > 100_000 || in_context (* unplug quotient here! *)
+            if res_len > 100_000
+              || in_context
+              || fold_state = Inside
+            (* unplug quotient here! *)
             then res
             else begin
               let quotient =
