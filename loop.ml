@@ -23,7 +23,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     then None
     else
       Utils.begin_end_msg "computing env" begin fun () ->
-      Some (Synthesis.generate 8 (n- 6) ops) 
+      Some (Synthesis.generate 8 (n-6) ops) 
       end
 
   let get_env () = match env with None -> assert false | Some env -> env 
@@ -201,7 +201,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 
   let invite () =
     print_newline ();
-    print_string "s(a)t (b)est r(e)ndom (g)uess (c)heck_all_equiv";
+    print_string "s(a)t r(e)ndom (g)uess (c)heck_all_equiv";
     print_newline ();
     print_string "$ "
 

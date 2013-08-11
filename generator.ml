@@ -222,10 +222,16 @@ let generate, generate_tfold, generate_novar,generate_context =
     let res =
       generate false size false ops Notations.([c0;c1;mk_arg; hole 0 false])
     in
-    for i = 0 to Array.length res - 1 do
-      res.(i) <- Term.renumber_holes res.(i)
-    done;
-    res
+    let terms,contexts1,contexts2 =
+      Array.fold_right (fun c ((ts,cs1,cs2) as acc)->
+	match Term.holes c with
+	| 0 -> (c::ts, cs1, cs2)
+	| 1 -> (ts, c::cs1, cs2)
+	| 2 -> (ts, cs1, Term.renumber_holes c::cs2)
+	| _ -> acc
+      ) res ([],[],[])
+    in
+    Array.of_list (List.flatten [terms;contexts1;contexts2])
   )
 
 let generate_constants ?(force_fold=true) size ?(exact=true) ops =

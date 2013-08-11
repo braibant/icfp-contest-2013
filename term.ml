@@ -111,7 +111,7 @@ let size x =
     | Cst (_, _, _) -> 1
   in aux x + 1
 
-let holes x =
+let max_hole x =
   let (+) = max in 
   let rec aux = function
     | C0 | C1 | Var _ -> min_int 
@@ -123,6 +123,16 @@ let holes x =
     | Cst (_, _, _) -> min_int
   in max 0 (succ (aux x))
 
+let rec holes =function
+  | C0 | C1 | Var _ -> 0
+  | Hole (n,_) -> 1
+  | If0 (e,f,g,_) -> holes e + holes f + holes g
+  | Fold (e,f,g, _) -> holes e + holes f + holes g
+  | Op1 (_, e, _) -> holes e
+  | Op2 (_, l, _) -> List.fold_left (fun acc e -> acc + holes e) min_int l
+  | Cst (_, _, _) -> 0
+
+  
 (* There is at most three variables in the terms, hence, we can define them statically *)
 module Constants = struct 
   let arg = 0
