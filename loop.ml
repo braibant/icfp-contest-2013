@@ -84,22 +84,22 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     (Array.sort compare s);
     Array.sub s 0 n
    
-  (* find the values that discriminate the most *)
-  let best (p:t) =
-    let n = 100_000 in 
-    let v = Array.init n (fun _ -> rnd64 ()) in 
-    let d = Array.create n 0 in
-    iter2 
-      (fun p1 p2 ->
-	for i = 0 to n - 1 do
-	  let x = v.(i) in 
-	  if Eval.eval p1 x <> Eval.eval p2 x 
-	  then d.(i) <- d.(i)+1
-	done) p;
-    (* What are the best 256 discriminating values ? *)
-    let r = Array.map (fun i -> v.(i)) (maxn 256 d) in 
-    (* Array.iteri (fun i x -> Printf.printf "%i %s\n" i (Int64.to_string x)) r; *)
-    r
+  (* (\* find the values that discriminate the most *\) *)
+  (* let best (p:t) = *)
+  (*   let n = 100_000 in  *)
+  (*   let v = Array.init n (fun _ -> rnd64 ()) in  *)
+  (*   let d = Array.create n 0 in *)
+  (*   iter2  *)
+  (*     (fun p1 p2 -> *)
+  (* 	for i = 0 to n - 1 do *)
+  (* 	  let x = v.(i) in  *)
+  (* 	  if Eval.eval p1 x <> Eval.eval p2 x  *)
+  (* 	  then d.(i) <- d.(i)+1 *)
+  (* 	done) p; *)
+  (*   (\* What are the best 256 discriminating values ? *\) *)
+  (*   let r = Array.map (fun i -> v.(i)) (maxn 256 d) in  *)
+  (*   (\* Array.iteri (fun i x -> Printf.printf "%i %s\n" i (Int64.to_string x)) r; *\) *)
+  (*   r *)
 
   exception Found of int
 
@@ -205,6 +205,12 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     print_newline ();
     print_string "$ "
 
+  (* Handler that declares these new constraints to the Synthesis engine *)
+  let eval keys =
+    let values = O.eval keys in
+    Synthesis.Constraints.addv keys values;
+    values
+      
   let rec iloop (p:t) (log: Xlog.log) =
     let p = check p in 
     Print.print (message
@@ -212,21 +218,21 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
        "possible terms", print_short p]);
     invite ();
     match read_line () with
-    | "b" ->  				(* best *)
-      let keys = best p in 
-      let values = O.eval keys in 
-      let refined,p = refine p keys values in 
-      Printf.printf "refined: %b\n" refined;
-      iloop p (Xlog.logv log keys values)
+    (* | "b" ->  				(\* best *\) *)
+    (*   let keys = best p in  *)
+    (*   let values = eval keys in  *)
+    (*   let refined,p = refine p keys values in  *)
+    (*   Printf.printf "refined: %b\n" refined; *)
+    (*   iloop p (Xlog.logv log keys values) *)
     | "e" -> 				(* random *)
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
-      let values = O.eval keys in 
+      let values = eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
       iloop p (Xlog.logv log keys values)
     | "a" -> 				(* with sat *)
       let keys = best_sat p in
-      let values = O.eval keys in 
+      let values = eval keys in 
       let refined,p = refine p keys values in 
       Printf.printf "refined: %b\n" refined;
       iloop p (Xlog.logv log keys values)
@@ -280,7 +286,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     let keys =
       if round < 2 then  Array.init 256 (fun _ -> rnd64 ())
       else best_sat p in 
-    let values = O.eval keys in 
+    let values = eval keys in 
     let refined,p = refine p keys values in
     let cursize = size p in
     if cursize = 1 || oldsize-cursize <= oldsize/5

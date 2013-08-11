@@ -16,7 +16,6 @@ module Constraints = struct
     List.iteri (fun i (k,v) -> keys.(i) <- k; values.(i) <- v) l;
     keys, values
 
-
   let add k v = map := IMap.add k v !map
  
   let addv keys values =
@@ -38,28 +37,55 @@ let eval a b c =
     raise e
       
 module PrioQueue = struct
-  let n = 5 				(* virons les contextes a plus que 5 trou *)
+
+  type t =
+    {
+      content : Term.exp array;
+      mutable next: int
+    }
 
   exception Empty
 
-  type t =
-    {queues : Term.exp Queue.t array;
-     mutable current : int }
+  let compare p q = 
+    let x = compare (Term.holes p) (Term.holes q) in
+    if  x == 0
+    then compare (Term.size p) (Term.size q) 
+    else x
 
-  let create () : t = 
-    {queues = Array.init n (fun _ -> Queue.create ());
-     current = 0}
+     
+  let create content =
+    Array.stable_sort compare  content;
+    {content; next = 0}
 
-  let rec pop (q:t) =
-    try  Queue.pop q.queues.(q.current) 
-    with Queue.Empty ->
-      if  q.current < n
-      then (q.current <- q.current + 1; pop q)
-      else raise Empty
+  let pop q =
+    if q.next < Array.length q.content 
+    then
+      let res = q.content.(q.next) in 
+      q.next <- q.next + 1;
+      res
+    else
+      raise Empty
+     
+  (* let n = 5 				(\* virons les contextes a plus que 5 trou *\) *)
 
-  let add elt (q:t) =
-    let nholes = Term.holes elt in 
-    if nholes < n then   Queue.add elt q.queues.(nholes) else ()
+  (* type t = *)
+  (*   {queues : Term.exp Queue.t array; *)
+  (*    mutable current : int } *)
+
+  (* let create () : t =  *)
+  (*   {queues = Array.init n (fun _ -> Queue.create ()); *)
+  (*    current = 0} *)
+
+  (* let rec pop (q:t) = *)
+  (*   try  Queue.pop q.queues.(q.current)  *)
+  (*   with Queue.Empty -> *)
+  (*     if  q.current < n *)
+  (*     then (q.current <- q.current + 1; pop q) *)
+  (*     else raise Empty *)
+
+  (* let add elt (q:t) = *)
+  (*   let nholes = Term.holes elt in  *)
+  (*   if nholes < n then   Queue.add elt q.queues.(nholes) else () *)
 end
       
 let explode (v: 'a list array) acc : 'a array list =
@@ -171,7 +197,7 @@ let generate sizeT sizeE ops =
   Printf.printf "terms: %i\n%!" (Array.length terms);
   let contexts = Generator.generate_context sizeE ops ([Term.Notations.hole 0 false]) in
   Printf.printf "contexts: %i\n%!" (Array.length contexts);
-  let queue = PrioQueue.create () in
-  Array.iter (fun elt -> PrioQueue.add elt queue) contexts;
+  let queue = PrioQueue.create contexts in
+  (* Array.iter (fun elt -> PrioQueue.add elt queue) contexts; *)
   {terms; contexts= queue; map = ref None}
     
