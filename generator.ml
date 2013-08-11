@@ -180,6 +180,22 @@ let generate, generate_tfold, generate_novar,generate_context =
 	    ops;
 	  let res = Array.make (Term.H.length htbl) Notations.mk_arg in
 	  ignore (Term.H.fold (fun e _ acc -> res.(acc) <- e; acc+1) htbl 0);
+          let res_len = Array.length res in
+          let res =
+            if size >= 8 then res
+            else begin
+              let msg = Printf.sprintf "quotient gen %d" size in
+              let quotient =
+                Utils.begin_end_msg msg (fun () ->
+                  Utils.time msg (fun () ->
+                    Array.of_list (Quotient.quotient (Array.to_list res))
+                  )
+                ) in
+              Printf.printf "Quotienting helped memo from %d to %d\n%!"
+                res_len (Array.length quotient);
+              quotient
+            end
+          in
 	  memo.(size-1).(fold_state_int) <- Some res
 	end;
       match memo.(size-1).(fold_state_int) with

@@ -1,6 +1,3 @@
-let ops = Generator.all_ops
-let n = 8
-
 let equiv t1 t2 =
   Sat.discriminate_with_holes [(t1, t2)] = [Sat.Unsat]
 
@@ -58,6 +55,7 @@ let quotient set =
   in
   List.concat (List.map handle subsets)  
 
+(*
 let test ~size_terms ~size_contexts =
   let terms =
     Generator.generate ~force_fold:false size_terms  ~exact:false ops in
@@ -74,6 +72,7 @@ let test ~size_terms ~size_contexts =
       quotient (Array.to_list contexts))) in
   Printf.printf "qcontexts: %i\n%!" (List.length qcontexts);
   ()
+*)
 
 (* GS: these settings are the largest I tested on my machine;
    ~size_terms:7 takes 60 seconds

@@ -27,7 +27,7 @@ let play_offline secret =
   Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
   let module Oracle = OfflineOracle(struct let secret = secret end) in
   let module Params = struct
-    let n = Term.size secret
+    let n = max (Term.size secret) !Config.problem_size
     let ops = Generator.operators secret
     let tfold = false (* TODO *)
   end in

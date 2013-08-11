@@ -5,6 +5,7 @@
 #require "netclient";;
 #require "camlp4";;
 #require "camlp4.fulllib";;
+#require "functory";;
 #load "camlp4lib.cma";;
 #directory "_build";;
 #load "_build/icfp.cma";;
