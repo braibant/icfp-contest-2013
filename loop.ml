@@ -14,31 +14,53 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   include X
 
   (* a bitvector representation of a set of the possible programs *)
-  type t = Bitv.t 
+  type t = 
+    {terms: Term.exp array;
+     sieve: Bitv.t} 
 
-  let terms = Utils.begin_end_msg "computing terms" begin fun () ->
-    if n < 8 || tfold || true then
-      Array.of_list (
-        if tfold then Generator.generate_tfold n ops
-	else Generator.generate n ops)
+  let env =
+    if not !Config.synthesis 
+    then None
     else
+      Utils.begin_end_msg "computing env" begin fun () ->
+      Some (Synthesis.generate 7 (n- 5) ops) 
+      end
+
+  let get_env () = match env with None -> assert false | Some env -> env 
+
+  (* initialize the term array *) 
+  let init () : t = 
+    let terms = Utils.begin_end_msg "computing terms" begin fun () ->
+      if (n < 8 || tfold) && not !Config.synthesis then
+	Array.of_list 
+	  (if tfold then Generator.generate_tfold n ops
+	   else Generator.generate n ops)
+      else
       let keys = Array.init 256 (fun _ -> rnd64 ()) in 
       let values = O.eval keys in 
-      let _ = Printf.printf "BEGIN\n%!" in 
-      let v = Array.of_list (Synthesis.main 7 5 ops keys values) in 
+      let v = Array.of_list (Synthesis.synthesis (get_env ()) keys values) in 
       Printf.printf "synthesis generated %i terms\n" (Array.length v);
       v
-  end
- 
-  let init = Bitv.create (Array.length terms) true
+    end 
+    in
+    let sieve = Bitv.create (Array.length terms) true in
+    {terms; sieve}
+
+  let size (p:t) : int = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p.sieve; !r
+
+  (* This function must be called to ensure that the current state is well-formed *)
+  let check p =  
+    if size p = 0 
+    then init ()
+    else p
 
   let print (p:t)=
     let l = ref [] in
-    Bitv.iteri_true (fun i -> l := terms.(i) :: !l) p;
+    Bitv.iteri_true (fun i -> l := p.terms.(i) :: !l) p.sieve;
     let open Print in 
     separate_map hardline (Print.doc_exp) !l
 
-  let size (p:t) : int = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p; !r
+  let size (p:t) : int = let r = ref 0 in Bitv.iteri_true (fun _ -> incr r) p.sieve; !r
 
   let print_short p =  let open Print in string (string_of_int (size p))
 
@@ -47,8 +69,9 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     Bitv.iteri_true 
       (fun x -> 
 	try 
-	  Bitv.iteri_true (fun y -> if x < y then f terms.(x) terms.(y) else raise End) p
-	with End -> ()) p
+	  Bitv.iteri_true (fun y -> if x < y then f p.terms.(x) p.terms.(y) 
+	    else raise End) p.sieve
+	with End -> ()) p.sieve
 
   (* find the n  indices that maximizes v.(n) (yet give different values to v.(n))  *)
   let maxn n v = 
@@ -58,7 +81,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     Array.sub s 0 n
    
   (* find the values that discriminate the most *)
-  let best p =
+  let best (p:t) =
     let n = 100_000 in 
     let v = Array.init n (fun _ -> rnd64 ()) in 
     let d = Array.create n 0 in
@@ -77,15 +100,15 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   exception Found of int
 
   (* find values that discriminate using sat solving *)
-  let best_sat p =
+  let best_sat (p:t ) =
     let keys = ref [] in
     for j = 0 to 10 do
       let get_nth k =
 	let cur = ref 0 in
 	try
-	  Bitv.iteri_true (fun i -> if !cur = k then raise (Found i) else incr cur) p;
+	  Bitv.iteri_true (fun i -> if !cur = k then raise (Found i) else incr cur) p.sieve;
 	  assert false
-	with Found i -> terms.(i)
+	with Found i -> p.terms.(i)
       in
       let pairs = ref [] in
       let n = size p in
@@ -108,7 +131,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 
   (* if we cannot find values that would make progress, we have to make a guess. *)
     
-  let all_equiv p =
+  let all_equiv (p: t) =
     let n = 100_000 in 
     let v = Array.init n (fun _ -> rnd64 ()) in 
     try 
@@ -137,25 +160,29 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       NotEquiv -> false
 
   let refine (p: t) (values: int64 array) (answers: int64 array) = 
-    let p' = Bitv.copy p in 
+    let sieve = Bitv.copy p.sieve in 
     let refined = ref false in 
     Bitv.iteri_true 
       (fun i -> 
-	if equiv terms.(i) values answers 
+	if equiv p.terms.(i) values answers 
 	then ()
-	else (refined := true; Bitv.set p' i false)	  
-      ) p;
-    !refined, p'
+	else (refined := true; Bitv.set sieve i false)	  
+      ) p.sieve;
+    !refined, {p with sieve}
 
   let refine1 p v a = 
     refine p [|v|] [|a|] 
 
 
-  let choose p = 
+  let rec choose p = 
     try
-      Bitv.iteri_true (fun i -> raise (Found i)) p;
+      Bitv.iteri_true (fun i -> raise (Found i)) p.sieve;
       raise Not_found
-    with Found i -> terms.(i)
+    with 
+    |Found i -> p.terms.(i)
+    |Not_found ->
+      Printf.printf "choose failed: regenerate terms\n";
+      choose (init ())
 
 
   let rec message l =
@@ -168,7 +195,8 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
     print_newline ();
     print_string "$ "
 
-  let rec iloop p (log: Xlog.log) =
+  let rec iloop (p:t) (log: Xlog.log) =
+    let p = check p in 
     Print.print (message
       ["current state", Xlog.print_short log;
        "possible terms", print_short p]);
@@ -217,7 +245,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
       iloop p log
     | "?" ->
       Printf.printf "all initial terms\n";
-      Array.iter Print.print_exp_nl terms;
+      Array.iter Print.print_exp_nl p.terms;
       iloop p log
 
     | _ ->
@@ -226,7 +254,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 	
          
   let iloop () = 
-    let r = iloop init Xlog.empty in 
+    let r = iloop (init ()) Xlog.empty in 
     Printf.printf "result\n";
     Print.(print_exp_nl r);
     match O.reveal () with
@@ -255,13 +283,13 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
 	  let refined,p = refine1 p value answer in 
 	  if not refined 
 	  then (Printf.eprintf "guess was not refining, size:%i\n" (size p); 
-		Print.print (print p); assert false);
+		(* Print.print (print p); assert false *));
 	  loop (succ round) p
       end
     else loop (succ round) p
       
   let loop () = 
-    let r =  (loop 0 init) in 
+    let r =  (loop 0 (init ())) in 
     Printf.printf "result\n";
     Print.(print_exp r);
     print_newline ()

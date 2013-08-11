@@ -3,6 +3,7 @@ let auth = ref "0243sNUd0X4oALiqb3Vw2Hejjh4uRV6JHy65rUX9"
 let logfile = ref "logfile"
 let interactive_mode = ref false 
 let problem_size = ref 4
+let synthesis = ref false
 
 let solved_file = ref "solved_problems"
 let problems_file = ref "problems"
@@ -59,4 +60,6 @@ let args =
     "-i", Set interactive_mode, " (idem)" ;
     "--problem-size", Set_int problem_size, "INT set problem size";
     "-n", Set_int problem_size, " (idem)";
+
+    "-s", Set synthesis, " use synthesis mode"
   ]
