@@ -106,3 +106,69 @@ let prog_of_string str =
     Loc.print Format.err_formatter loc;
     Format.eprintf "\nError %S in the parser\n%s%!" (Printexc.to_string exn) str;
     raise exn
+
+let rec ops_of = function
+  | `C0 | `C1 | `Var _ -> OSet.empty
+  | `If0 (e1, e2, e3) ->
+      OSet.add If0o (OSet.union (ops_of e1) (OSet.union (ops_of e2) (ops_of e3)))
+  | `Fold (e1, e2, `Lam2 (_, _, e3)) ->
+      OSet.add Foldo (OSet.union (ops_of e1) (OSet.union (ops_of e2) (ops_of e3)))
+  | `Op1 (op, e) -> OSet.add (Op1o op) (ops_of e)
+  | `Op2 (op, e1, e2) -> OSet.add (Op2o op) (OSet.union (ops_of e1) (ops_of e2))
+
+let ops_of_string str =
+  try
+    let `Lam (_, term_with_vars) = LambdaGram.parse_string prog (Loc.mk "lalala") str in
+    ops_of term_with_vars
+  with Loc.Exc_located (loc, exn) ->
+    Loc.print Format.err_formatter loc;
+    Format.eprintf "\nError %S in the parser\n%s%!" (Printexc.to_string exn) str;
+    raise exn
+
+let rec if0_of = function
+  | `C0 | `C1 | `Var _ -> 0
+  | `If0 (e1, e2, e3) -> 1 + if0_of e1 + if0_of e2 + if0_of e3
+  | `Fold (e1, e2, `Lam2 (_, _, e3)) -> if0_of e1 + if0_of e2 + if0_of e3
+  | `Op1 (op, e) -> if0_of e
+  | `Op2 (op, e1, e2) -> if0_of e1 + if0_of e2
+
+let if0_of_string str =
+  try
+    let `Lam (_, term_with_vars) = LambdaGram.parse_string prog (Loc.mk "lalala") str in
+    if0_of term_with_vars
+  with Loc.Exc_located (loc, exn) ->
+    Loc.print Format.err_formatter loc;
+    Format.eprintf "\nError %S in the parser\n%s%!" (Printexc.to_string exn) str;
+    raise exn
+
+let rec ops2_of = function
+  | `C0 | `C1 | `Var _ -> 0
+  | `If0 (e1, e2, e3) -> ops2_of e1 + ops2_of e2 + ops2_of e3
+  | `Fold (e1, e2, `Lam2 (_, _, e3)) -> ops2_of e1 + ops2_of e2 + ops2_of e3
+  | `Op1 (op, e) -> ops2_of e
+  | `Op2 (op, e1, e2) -> 1 + ops2_of e1 + ops2_of e2
+
+let ops2_of_string str =
+  try
+    let `Lam (_, term_with_vars) = LambdaGram.parse_string prog (Loc.mk "lalala") str in
+    ops2_of term_with_vars
+  with Loc.Exc_located (loc, exn) ->
+    Loc.print Format.err_formatter loc;
+    Format.eprintf "\nError %S in the parser\n%s%!" (Printexc.to_string exn) str;
+    raise exn
+
+let rec ops1_of = function
+  | `C0 | `C1 | `Var _ -> 0
+  | `If0 (e1, e2, e3) -> ops1_of e1 + ops1_of e2 + ops1_of e3
+  | `Fold (e1, e2, `Lam2 (_, _, e3)) -> ops1_of e1 + ops1_of e2 + ops1_of e3
+  | `Op1 (op, e) -> 1 + ops1_of e
+  | `Op2 (op, e1, e2) -> ops1_of e1 + ops1_of e2
+
+let ops1_of_string str =
+  try
+    let `Lam (_, term_with_vars) = LambdaGram.parse_string prog (Loc.mk "lalala") str in
+    ops1_of term_with_vars
+  with Loc.Exc_located (loc, exn) ->
+    Loc.print Format.err_formatter loc;
+    Format.eprintf "\nError %S in the parser\n%s%!" (Printexc.to_string exn) str;
+    raise exn

@@ -1,11 +1,5 @@
 open Term
 
-module OSet : Set.S with type elt = op
-
-val ops_from_list : op list -> OSet.t
-val all_ops : OSet.t
-
-val operators : Term.exp -> OSet.t
 val generate : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp array
 val generate_tfold : int -> ?exact:bool -> OSet.t -> Term.exp array
 val generate_novar : ?force_fold:bool -> int -> ?exact:bool -> OSet.t -> Term.exp array

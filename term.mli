@@ -43,16 +43,22 @@ val rnd64 : unit -> int64
 module Notations :
     sig
       val mk_arg : exp
+      val x : exp
       val mk_facc : exp
       val mk_farg : exp
       val c0 : exp
       val c1 : exp
       val cst : int64 -> exp -> exp
       val (&&) : exp -> exp -> exp
+      val anD : exp -> exp -> exp
       val (||) : exp -> exp -> exp
+      val oR : exp -> exp -> exp
       val ( ** ) : exp -> exp -> exp (*Xor*)
+      val xor : exp -> exp -> exp
       val (++) : exp -> exp -> exp
+      val plus : exp -> exp -> exp
       val (~~) : exp -> exp (* Not *)
+      val not : exp -> exp
       val shl1 : exp -> exp
       val shr1 : exp -> exp
       val shr4 : exp -> exp
@@ -75,3 +81,10 @@ val op_of_string : string -> [ `Bonus | `Op of op ]
 val string_of_op1 : op1 -> string
 val string_of_op2 : op2 -> string
 val string_of_op : op -> string
+
+module OSet : Set.S with type elt = op
+
+val ops_from_list : op list -> OSet.t
+val all_ops : OSet.t
+
+val operators : exp -> OSet.t

@@ -28,7 +28,7 @@ let play_offline secret =
   let module Oracle = OfflineOracle(struct let secret = secret end) in
   let module Params = struct
     let n = max (Term.size secret) !Config.problem_size
-    let ops = Generator.operators secret
+    let ops = Term.operators secret
     let tfold = false (* TODO *)
   end in
   let module Loop = Loop.FState(Params)(Oracle) in
@@ -74,7 +74,7 @@ end
 (** real world play *)
 type problem_data = {
   id : string;
-  operators : Generator.OSet.t;
+  operators : Term.OSet.t;
   size : int;
   tfold : bool;
   bonus : bool;
@@ -90,7 +90,7 @@ let problem_data p =
   in
   {
   id = p.Protocol.Problem.Response.id;
-  operators = Generator.ops_from_list ops;
+  operators = Term.ops_from_list ops;
   size = p.Protocol.Problem.Response.size;
   tfold = List.mem "tfold" p.Protocol.Problem.Response.operators;
   bonus = !bonus;
@@ -122,7 +122,7 @@ let play_training pb =
   let problem = {
     id = pb.Response.id;
     size = pb.Response.size;
-    operators = Generator.operators secret;
+    operators = Term.operators secret;
     tfold = List.mem "tfold" pb.Response.operators;
     bonus = false;
   } in

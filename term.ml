@@ -149,6 +149,7 @@ let rnd64 () =
 module Notations = struct
     
   let mk_arg = HC.hashcons (Var (Constants.arg))
+  let x = mk_arg
   let mk_facc = HC.hashcons (Var (Constants.fold_acc))
   let mk_farg = HC.hashcons (Var (Constants.fold_arg))
   let c0 = HC.hashcons C0
@@ -236,11 +237,12 @@ module Notations = struct
     | And -> op1 Not c0
     | Or | Plus | Xor -> c0
 
-  let (~~) x = op1 Not x 
-  let shl1 x = op1 Shl1 x
-  let shr1 x = op1 Shr1 x
-  let shr4 x = op1 Shr4 x
-  let shr16 x = op1 Shr16 x
+  let (~~) = op1 Not
+  let not = (~~)
+  let shl1 = op1 Shl1
+  let shr1 = op1 Shr1
+  let shr4 = op1 Shr4
+  let shr16 = op1 Shr16
 
   (* binop *)
 
@@ -249,6 +251,10 @@ module Notations = struct
   let (||) = op2 Or
   let ( ** ) = op2 Xor
   let (++) = op2 Plus
+  let plus = (++)
+  let xor = ( ** )
+  let oR = (||)
+  let anD = (&&)
 
   let fold c a b = HC.hashcons (Fold (c, a, b, -1))
 
@@ -342,3 +348,31 @@ let string_of_op = function
   | Foldo -> "fold"
   | Op1o op -> string_of_op1 op
   | Op2o op -> string_of_op2 op
+
+module OSet = Set.Make(struct type t=op let compare=Pervasives.compare end)
+
+let ops_from_list =
+  List.fold_left (fun acc t -> OSet.add t acc) OSet.empty
+
+let all_ops =
+  ops_from_list
+    [If0o;
+     Op1o Not;Op1o Shl1;Op1o Shr1;Op1o Shr4;Op1o Shr16;
+     Op2o And;Op2o Or;Op2o Xor;Op2o Plus]
+
+let operators t =
+  let rec operators t acc =
+    match t with
+    | C0 | C1 | Var _ | Hole (_,_) -> acc 
+    | If0(a,b,c,_) ->
+	operators a (operators b (operators c (OSet.add If0o acc)))
+    | Fold(a,b,c,_) ->
+	operators a (operators b (operators c (OSet.add Foldo acc)))
+    | Op1(ops,a,_) ->
+      let l = ops_from_list (List.map (fun x -> Op1o x) ops) in
+	operators a (OSet.union l acc)
+    | Op2(op,l,_) ->
+	List.fold_left (fun acc e -> operators e acc) (OSet.add (Op2o op) acc) l
+    | Cst(_, _, _) -> assert false
+  in
+  operators t OSet.empty

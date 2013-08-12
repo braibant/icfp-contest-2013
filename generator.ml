@@ -1,33 +1,5 @@
 open Term
 
-module OSet = Set.Make(struct type t=op let compare=compare end)
-
-let ops_from_list =
-  List.fold_left (fun acc t -> OSet.add t acc) OSet.empty
-
-let all_ops =
-  ops_from_list
-    [If0o;
-     Op1o Not;Op1o Shl1;Op1o Shr1;Op1o Shr4;Op1o Shr16;
-     Op2o And;Op2o Or;Op2o Xor;Op2o Plus]
-
-let operators t =
-  let rec operators t acc =
-    match t with
-    | C0 | C1 | Var _ | Hole (_,_) -> acc 
-    | If0(a,b,c,_) ->
-	operators a (operators b (operators c (OSet.add If0o acc)))
-    | Fold(a,b,c,_) ->
-	operators a (operators b (operators c (OSet.add Foldo acc)))
-    | Op1(ops,a,_) ->
-      let l = ops_from_list (List.map (fun x -> Op1o x) ops) in
-	operators a (OSet.union l acc)
-    | Op2(op,l,_) ->
-	List.fold_left (fun acc e -> operators e acc) (OSet.add (Op2o op) acc) l
-    | Cst(_, _, _) -> assert false
-  in
-  operators t OSet.empty
-
 let rec min_free_var = function
   | C0 -> 3
   | C1 -> 3

@@ -10,10 +10,10 @@ module type ORACLE = sig
 end
 
 module GenInput = struct
-  type t = int * Generator.OSet.t
+  type t = int * Term.OSet.t
   let compare (sa, opa) (sb, opb) =
     match compare sa sb with
-      | 0 -> Generator.OSet.compare opa opb
+      | 0 -> Term.OSet.compare opa opb
       | n -> n
 end
 module MapGenInput = Map.Make(GenInput)
@@ -36,7 +36,7 @@ let memo_generate_tfold =
 exception Incomplete
 
 (* Client *)
-module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O: ORACLE) = struct
+module FState(X:sig val n : int val ops: Term.OSet.t val tfold: bool end)(O: ORACLE) = struct
   include X
 
   let init_size = ref (min !Config.search_max n)
@@ -63,7 +63,7 @@ module FState(X:sig val n : int val ops: Generator.OSet.t val tfold: bool end)(O
   (* initialize the term array *) 
   let init () : t = 
     let terms = Utils.begin_end_msg "computing terms" begin fun () ->
-      if (n < 8 || Generator.OSet.mem Term.Foldo ops) || not !Config.synthesis then
+      if (n < 8 || Term.OSet.mem Term.Foldo ops) || not !Config.synthesis then
 	if tfold then memo_generate_tfold !init_size ops
 	else memo_generate !init_size ops
       else
