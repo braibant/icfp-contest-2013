@@ -282,6 +282,32 @@ let discriminate l =
     | Unknown -> Unknown)
     pbs res
 
+let equiv t1 t2 = 
+  let pb,input =
+    let state = init_state () in
+    let env = [|new_64var state|] in
+    let no_holes = [||] in
+    let enc1 = encode_formula state env no_holes t1 in
+    let enc2 = encode_formula state env no_holes t2 in
+    add_diff_clause state enc1 enc2;
+    state, env.(0)
+  in
+  match List.hd (run_minisat [pb]) with
+  | Sat data ->
+    let res = int64_of_var64 data input in
+    let res1 = Eval.eval t1 res in 
+    let res2 = Eval.eval t2 res in 
+    if res1 = res2 
+    then 
+      begin
+	Printf.printf "===== WARNING =====\n";
+	Printf.printf "Problem in SAT encoding : wrong discriminator\n";
+	Unknown
+      end
+    else Sat (res, res1, res2)
+    | Unsat -> Unsat
+    | Unknown -> Unknown
+
 let synthesis n_if0 n_binop n_unop ops keys values =
   let n_atoms = 2*n_if0 + n_binop + 1 in
   let state = init_state () in

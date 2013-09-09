@@ -6,19 +6,11 @@ module OfflineOracle(S: sig val secret : Term.exp end)  = struct
     
   let eval x = Eval.evalv secret x  
 
-  let discriminating n = Array.init n (fun x -> Term.rnd64 ())
-
-  let guess p' =
-    let confidence = 10000 in
-    let tests = discriminating confidence in
-    let rec aux i =
-      if i = confidence - 1 then Equiv
-      else
-	let x = tests.(i) in
-	if Eval.eval p' x = Eval.eval secret x
-	then aux (succ i)
-	else Discr (x,Eval.eval secret x)
-    in aux 0
+  let guess p = 
+    match Sat.equiv p secret with
+    | Sat.Unsat -> Equiv
+    | Sat.Unknown -> failwith "Unkown" 			
+    | Sat.Sat (x,_,sx)-> Discr (x, sx) 
 
   let reveal () = Some secret
 end
