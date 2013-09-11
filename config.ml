@@ -18,6 +18,7 @@ let bypass = ref false
 
 type source =
 | Train_offline
+| Train_offline2
 | Train_online
 | Train_serialized
 | Single_problem of string
@@ -50,6 +51,10 @@ let args =
 
     "--train-offline", Unit (set_source Train_offline),
     " play offline with a randomly-generated term";
+
+    "--train-offline2", Unit (set_source Train_offline2),
+    " play offline with a randomly-generated term";
+
     "--train-online", Unit (set_source Train_online),
     " use the online training mode";
     "--train-serialized", Unit (set_source Train_serialized),

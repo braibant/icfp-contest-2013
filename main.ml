@@ -32,6 +32,21 @@ let train_offline () =
   let secret = Example.random !Config.problem_size in
   play_offline secret
 
+let play_offline2 secret =
+  Printf.printf "start (size of the secret:%i)\n%!" (Term.size secret);
+  let module Oracle = OfflineOracle(struct let secret = secret end) in
+  let module Params = struct
+    let n = max (Term.size secret) !Config.problem_size
+    let ops = Term.operators secret
+    let tfold = false (* TODO *)
+  end in
+  let module Loop = Newloop.FState(Params)(Oracle) in
+  Loop.loop ()
+
+let train_offline2 () =
+  let secret = Example.random !Config.problem_size in
+  play_offline2 secret
+
 (** Online training, on the server *)
 module OnlineOracle(X: sig val id : string val secret : Term.exp option end) =
 struct
@@ -274,6 +289,8 @@ let _ =
       | None -> ()
       | Some Config.Train_offline ->
         train_offline ()
+      | Some Config.Train_offline2 ->
+        train_offline2 ()
       | Some Config.Train_online ->
         train_online ()
       | Some Config.Train_serialized ->
